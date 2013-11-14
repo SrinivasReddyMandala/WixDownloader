@@ -118,11 +118,11 @@
                         </buttonCell>
                     </button>
                     <progressIndicator fixedFrame="YES" maxValue="100" indeterminate="YES" style="bar" translatesAutoresizingMaskIntoConstraints="NO" id="Rhr-OJ-NhG">
-                        <rect key="frame" x="252" y="15" width="188" height="20"/>
+                        <rect key="frame" x="252" y="15" width="180" height="20"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     </progressIndicator>
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="E7k-97-1W4">
-                        <rect key="frame" x="443" y="17" width="44" height="17"/>
+                        <rect key="frame" x="438" y="17" width="48" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="%" id="cAR-mo-jgQ">
                             <font key="font" metaFont="system"/>

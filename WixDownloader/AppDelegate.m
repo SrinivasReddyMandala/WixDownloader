@@ -12,26 +12,45 @@ NSString* DownloadPath;
 
 -(NSString*)downloadFile:(NSString*)url
 {
-    //[self Debug:[NSString stringWithFormat:@"Downloading URL: %@", url]];
+    BOOL allow = FALSE;
+    NSArray* allowedDomains = [NSArray arrayWithObjects: @"wix.com", @"parastorage.com", @"wixstatic.com", [site stringValue], nil];
     
-    NSHTTPURLResponse *urlResponse = nil;
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[url stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]]];
-    
-    //Fool's day incoming folks
-    [request setHTTPMethod:@"GET"];
-    [request addValue:@"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:25.0) Gecko/20100101 Firefox/25.0" forHTTPHeaderField: @"User-Agent"];
-    
-    NSData *indexData = [NSURLConnection sendSynchronousRequest:request returningResponse:&urlResponse error:nil];
-    
-    if ([urlResponse statusCode] == 200)
+    for(int i = 0; i < [allowedDomains count]; i++)
     {
-        return [[NSString alloc] initWithData:indexData encoding:NSUTF8StringEncoding];
+        if ([url rangeOfString:[allowedDomains objectAtIndex:i]].location != NSNotFound)
+        {
+            allow = TRUE;
+            break;
+        }
     }
-    else
+    if(allow)
     {
-        //[self Debug:[NSString stringWithFormat:@"Downloading ERROR (%ld): %@", [urlResponse statusCode], url]];
-        return NULL;
+        //[self Debug:[NSString stringWithFormat:@"Downloading URL: %@", url]];
+        
+        NSHTTPURLResponse *urlResponse = nil;
+        NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[url stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]]];
+        
+        //Fool's day incoming folks
+        [request setHTTPMethod:@"GET"];
+        [request addValue:@"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:25.0) Gecko/20100101 Firefox/25.0" forHTTPHeaderField: @"User-Agent"];
+        
+        NSData *indexData = [NSURLConnection sendSynchronousRequest:request returningResponse:&urlResponse error:nil];
+        
+        if ([urlResponse statusCode] == 200)
+        {
+            return [[NSString alloc] initWithData:indexData encoding:NSUTF8StringEncoding];
+        }
+        else
+        {
+            //[self Debug:[NSString stringWithFormat:@"Downloading ERROR (%ld): %@", [urlResponse statusCode], url]];
+        }
     }
+    return NULL;
+}
+
+- (NSData*) ServerPWN
+{
+    return NULL;
 }
 
 -(void)startThread
@@ -71,7 +90,10 @@ NSString* DownloadPath;
                 //=========== index.json ============
                 // This is tricky to detect, but wix has many index.json
                 // hidden in directories, make sure we don't miss them
-                [self jsonAnalyzer:[NSString stringWithFormat:@"http://%@/%@index.json",[domainRoot objectAtIndex:0],dirRoot] :@"index.json"];
+                if ([dirRoot rangeOfString:@"?"].location == NSNotFound)
+                {
+                    [self fileAnalyzer:[NSString stringWithFormat:@"http://%@/%@index.json",[domainRoot objectAtIndex:0],dirRoot] :@"index.json"];
+                }
                 //=========== index.json ============
             }
             dirRoot = [self pathFromURL:fileDownload];
@@ -100,7 +122,7 @@ NSString* DownloadPath;
             }
             else
             {
-                [self jsonAnalyzer:fileDownload :fileRoot];
+                [self fileAnalyzer:fileDownload :fileRoot];
                 
             }
             
@@ -113,16 +135,6 @@ NSString* DownloadPath;
             if ([php state] == NSOnState)  //TODO: create emulating email php?
             {
                 NSString* invokePHP = @"<?php\
-                if (isset ($_POST['name'])){\
-                $to      = $_POST['email'];\
-                $subject = $_POST['subject'];\
-                $message = $_POST['message'];\
-                $headers = \"From: \" . $_POST['name'] . \" <\". $_POST['email'] . \">\";\
-                mail($to, $subject, $message, $headers);\
-                echo '{\"response\":\"success\"}';\
-                }else{\
-                echo '{\"response\":\"error\"}';\
-                }\
                 ?>";
                 [invokePHP writeToFile:[NSString stringWithFormat:@"%@/common-services/notification/invoke",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:nil];
             }
@@ -146,10 +158,9 @@ NSString* DownloadPath;
             indexHTML = [indexHTML stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"\"domain\":\"%@\"",[domainRoot objectAtIndex:0]] withString:[NSString stringWithFormat:@"\"domain\":\"%@\"",[[domain stringValue] stringByReplacingOccurrencesOfString:@"http://" withString:@""]]];
         }
         
-        float p = i / [jsonHTTP count] * 100;
-        //NSLog(@"Complete %ld %% (%d of %ld)", i/[jsonHTTP count], i,[jsonHTTP count]);
-        
-        [percent setStringValue:[NSString stringWithFormat:@"%.1f %%", p]];
+        float totalcount = [jsonHTTP count];
+        float currentcount = i;
+        [percent setStringValue:[NSString stringWithFormat:@"%.1f %%", currentcount / totalcount * 100]];
         [progress setDoubleValue:i];
     }
     
@@ -180,6 +191,10 @@ NSString* DownloadPath;
     [loading setHidden:TRUE];
     [progress stopAnimation: self];
     
+    
+    // TODO: Looks like some "skin" graphics files are hidden deep inside java
+    // do a server sweep and look for 404 requests on live Safari view.
+    
     if ([[domain stringValue] rangeOfString:@"127.0.0.1"].location != NSNotFound)
     {
         @try
@@ -192,91 +207,144 @@ NSString* DownloadPath;
             //[HTTPServer waitUntilExit];
             
             [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[[domain stringValue] stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]]];
-            
         }
         @catch (NSException *exception)
         {
             NSLog(@"HTTPServer Error: %@", exception);
         }
     }
+    
+    [percent setStringValue:@"100 %%"];
 }
 
--(void)jsonAnalyzer:(NSString*)file :(NSString*)fileRoot
+-(NSString*)http_prefixBug:(NSString*)url
 {
-    [self Debug:[NSString stringWithFormat:@"JSON File Analyzer: %@", file]];
+    NSArray* check = [url componentsSeparatedByString: @"/"];
+
+    if (![[check objectAtIndex:1] isEqualToString:@""])
+    {
+        [self Debug:[NSString stringWithFormat:@"[Xcode Bug] Correcting URL > %@",url]];
+        url = [url stringByReplacingOccurrencesOfString:@"http:/" withString:@"http://"];
+    }
+  return url;
+}
+
+-(void)fileAnalyzer:(NSString*)file :(NSString*)fileRoot
+{
+    //Apple Bug? when doing stringByDeletingLastPathComponent for URL it kicks out one of slash from http://
+    file = [self http_prefixBug: file];
+    
+    [self Debug:[NSString stringWithFormat:@"> File Analyzer: %@", file]];
     
     NSString* webfile = [self downloadFile:file];
+    
     if(webfile != NULL)
     {
-        NSArray *attached = [webfile componentsSeparatedByString: @","];
-        NSArray* urlExtentions = [NSArray arrayWithObjects: @"\"resources\":", @"\"uri\":",@"\"url\":", nil];
-        
         [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/%@",DownloadPath,[self pathFromURL:file]] withIntermediateDirectories:YES attributes:nil error:nil];
+        
         [webfile writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],fileRoot] atomically:YES encoding:NSUTF8StringEncoding error:nil];
         
-        for(int u = 0; u < [attached count]; u++)
+        NSArray* binExtentions = [NSArray arrayWithObjects: @"png", @"jpg", @"jpeg", @"gif", @"mp3", @"wix_mp", nil]; //wix_mp looks like png format
+        NSArray* txtExtentions = [NSArray arrayWithObjects: @"js", @"css", nil];
+        NSData* webBinary;
+        NSArray *split;
+        
+        if([[fileRoot pathExtension] isEqualToString:@"js"])
         {
-            NSString* img = [attached objectAtIndex:u];
-            BOOL link = FALSE;
-            for(int i = 0; i < [urlExtentions count]; i++)
+            split = [webfile componentsSeparatedByString: @";"];
+            NSArray* jsExtentions = [NSArray arrayWithObjects: @"background-image:url",@"background:url", nil];
+            for(int u = 0; u < [split count]; u++)
             {
-                if ([[attached objectAtIndex:u] rangeOfString:[urlExtentions objectAtIndex:i]].location != NSNotFound)
-                {
-                    img = [img stringByReplacingOccurrencesOfString:[urlExtentions objectAtIndex:i] withString:@""];
-                    link = TRUE;
-                }
-            }
-            
-            if (link)
-            {
-                //Cleanup other Ajax crap
-                img = [img stringByReplacingOccurrencesOfString:@"]" withString:@""];
-                img = [img stringByReplacingOccurrencesOfString:@"[" withString:@""];
-                img = [img stringByReplacingOccurrencesOfString:@"{" withString:@""];
-                img = [img stringByReplacingOccurrencesOfString:@"}" withString:@""];
-                img = [img stringByReplacingOccurrencesOfString:@"\"" withString:@""];
+                NSString* img = [split objectAtIndex:u];
                 
-                [self Debug:[NSString stringWithFormat:@"Hidden JSON File: %@ (%@)",img,[img pathExtension]]];
-                
-                //We don't care about the Editor, we just want our website.
-                if ([img rangeOfString:@"wysiwyg/editor"].location == NSNotFound && [img rangeOfString:@"skins/editor"].location == NSNotFound)
+                BOOL link = FALSE;
+                for(int i = 0; i < [jsExtentions count]; i++)
                 {
-                    NSData* webBinary;
-                    NSArray* binExtentions = [NSArray arrayWithObjects: @"png", @"jpg", @"jpeg", @"gif", @"mp3", @"wix_mp", nil]; //wix_mp looks like png format
-                    NSArray* txtExtentions = [NSArray arrayWithObjects: @"js", @"css", nil];
-                    
-                    //http://static.parastorage.com/services/bootstrap/2.648.0/index.json
-                    
-                    if([binExtentions containsObject:[img pathExtension]] && [media state] == NSOnState) //binary files, no analisys needed
+                    if ([[split objectAtIndex:u] rangeOfString:[jsExtentions objectAtIndex:i]].location != NSNotFound)
                     {
-                        [self Debug:[NSString stringWithFormat:@"Downloading Media File: %@", img]];
-                        webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:[NSString stringWithFormat:@"http://static.wixstatic.com/media/%@",img]]];
-                        
-                        [[NSFileManager defaultManager] createDirectoryAtPath:[[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],img] stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
-                        if ([webBinary writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],img] atomically:YES])
+                        @try
                         {
-                            //TODO: wix has a dynamic image by size, make php to emulate the same
-                            if ([php state] == NSOnState)
-                            {
-                                
-                            }
+                            NSArray* bktLeft = [[jsExtentions objectAtIndex:i] componentsSeparatedByString: @")"];
+                            NSArray* bktRight = [[bktLeft objectAtIndex:0] componentsSeparatedByString: @"("];
+                            img = [bktRight objectAtIndex:1];
+                            link = TRUE;
+                            break;
+                        }
+                        @catch (NSException *exception)
+                        {
+                            //TODO: make this better
+                            return;
                         }
                     }
-                    else if([txtExtentions containsObject:[img pathExtension]]) //binary files, no analisys needed
+                }
+                if (link)
+                {
+                    [self Debug:[NSString stringWithFormat:@"\t(%@) Hidden File: %@",fileRoot,img]];
+                    //http://localhost/skins/images/wysiwyg/core/themes/base/
+                    
+                    //THEME_DIRECTORY
+                    //WEB_THEME_DIRECTORY
+                    //BASE_THEME_DIRECTORY
+                    
+                    //TODO: Finish this part
+                }
+            }
+        }
+        else if([[fileRoot pathExtension] isEqualToString:@"json"])
+        {
+            split = [webfile componentsSeparatedByString: @","];
+            NSArray* jsonExtentions = [NSArray arrayWithObjects: @"\"resources\":", @"\"uri\":",@"\"url\":", nil];
+            
+            for(int u = 0; u < [split count]; u++)
+            {
+                NSString* img = [split objectAtIndex:u];
+                BOOL link = FALSE;
+                for(int i = 0; i < [jsonExtentions count]; i++)
+                {
+                    if ([[split objectAtIndex:u] rangeOfString:[jsonExtentions objectAtIndex:i]].location != NSNotFound)
                     {
-                        [self Debug:[NSString stringWithFormat:@"Download Hidden File: %@/%@ (%ld)", [file stringByDeletingLastPathComponent],img,[webBinary length]]];
-                        webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/%@",[file stringByDeletingLastPathComponent],img]]];
-                        
-                        [self Debug:[NSString stringWithFormat:@"Save Hidden File: %@/%@/%@",DownloadPath,[self pathFromURL:file], img]];
-                        
-                        [[NSFileManager defaultManager] createDirectoryAtPath:[[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],img] stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
-                        if ([webBinary writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],img] atomically:YES])
+                        img = [img stringByReplacingOccurrencesOfString:[jsonExtentions objectAtIndex:i] withString:@""];
+                        link = TRUE;
+                        break;
+                    }
+                }
+                
+                if (link)
+                {
+                    //Cleanup other Ajax crap
+                    img = [img stringByReplacingOccurrencesOfString:@"]" withString:@""];
+                    img = [img stringByReplacingOccurrencesOfString:@"[" withString:@""];
+                    img = [img stringByReplacingOccurrencesOfString:@"{" withString:@""];
+                    img = [img stringByReplacingOccurrencesOfString:@"}" withString:@""];
+                    img = [img stringByReplacingOccurrencesOfString:@"\"" withString:@""];
+                    
+                    [self Debug:[NSString stringWithFormat:@"\t(%@) Hidden File: %@",fileRoot,img]];
+                    //http://static.parastorage.com/services/bootstrap/2.648.0/index.json
+                    
+                    [[NSFileManager defaultManager] createDirectoryAtPath:[[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],img] stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
+                    
+                    //We don't care about the Editor, we just want our website.
+                    if ([img rangeOfString:@"wysiwyg/editor"].location == NSNotFound && [img rangeOfString:@"skins/editor"].location == NSNotFound)
+                    {
+                        if([binExtentions containsObject:[img pathExtension]] && [media state] == NSOnState) //binary files, no analisys needed
                         {
-                            //TODO: wix has a dynamic image by size retreival, make php to emulate the same
-                            if ([php state] == NSOnState)
+                            [self Debug:[NSString stringWithFormat:@"\tDownloading Media File: %@", img]];
+                            webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:[NSString stringWithFormat:@"http://static.wixstatic.com/media/%@",img]]];
+                            
+                            if ([webBinary writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],img] atomically:YES])
                             {
-                                
+                                //TODO: wix has a dynamic image by size, make php to emulate the same
+                                if ([php state] == NSOnState)
+                                {
+                                    
+                                }
                             }
+                        }
+                        else if([txtExtentions containsObject:[img pathExtension]]) //binary files, no analisys needed
+                        {
+                            [self Debug:[NSString stringWithFormat:@"\tDownload Hidden File: %@/%@", [file stringByDeletingLastPathComponent],img]];
+                            [self fileAnalyzer:[NSString stringWithFormat:@"%@/%@",[file stringByDeletingLastPathComponent],img] :[img lastPathComponent]];
+                            
                         }
                     }
                 }
