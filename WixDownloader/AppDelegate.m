@@ -4,6 +4,7 @@
 @implementation AppDelegate
 NSThread *thread;
 NSString* DownloadPath;
+NSMutableSet* Bandwidth;
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication
 {
@@ -23,9 +24,9 @@ NSString* DownloadPath;
             break;
         }
     }
-    if(allow)
+    if(allow && ![Bandwidth containsObject:url])
     {
-        //[self Debug:[NSString stringWithFormat:@"Downloading URL: %@", url]];
+        [self Debug:[NSString stringWithFormat:@"Downloading URL: %@", url]];
         
         NSHTTPURLResponse *urlResponse = nil;
         NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[url stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]]];
@@ -34,10 +35,15 @@ NSString* DownloadPath;
         [request setHTTPMethod:@"GET"];
         [request addValue:@"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:25.0) Gecko/20100101 Firefox/25.0" forHTTPHeaderField: @"User-Agent"];
         
+        //Usually a good idea, as a security measure some files can be protected if no refferer
+        //http://en.wikipedia.org/wiki/HTTP_referer
+        [request addValue:url forHTTPHeaderField: @"Referer"];
+        
         NSData *indexData = [NSURLConnection sendSynchronousRequest:request returningResponse:&urlResponse error:nil];
         
         if ([urlResponse statusCode] == 200)
         {
+            [Bandwidth addObject:url];
             return [[NSString alloc] initWithData:indexData encoding:NSUTF8StringEncoding];
         }
         else
@@ -264,7 +270,7 @@ NSString* DownloadPath;
                     {
                         @try
                         {
-                            NSArray* bktLeft = [[jsExtentions objectAtIndex:i] componentsSeparatedByString: @")"];
+                            NSArray* bktLeft = [[split objectAtIndex:u] componentsSeparatedByString: @")"];
                             NSArray* bktRight = [[bktLeft objectAtIndex:0] componentsSeparatedByString: @"("];
                             img = [bktRight objectAtIndex:1];
                             link = TRUE;
@@ -378,6 +384,9 @@ NSString* DownloadPath;
         
         [progress setDoubleValue:0];
         [progress startAnimation: self];
+        
+        //Keeps track of redundant downloads, optimizes bandwidth
+        Bandwidth = [[NSMutableSet alloc] init];
         
         /*
          if ([[site stringValue] rangeOfString:@"wix.com"].location == NSNotFound)
