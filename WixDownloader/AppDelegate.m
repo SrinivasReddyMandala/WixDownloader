@@ -5,6 +5,12 @@
 NSThread *thread;
 NSString* DownloadPath;
 NSMutableSet* Bandwidth;
+NSArray* allowedDomains;
+NSArray* binExtentions;
+NSArray* txtExtentions;
+
+NSArray* wixTags;
+NSArray* wixTagsURL;
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication
 {
@@ -14,8 +20,6 @@ NSMutableSet* Bandwidth;
 -(NSString*)downloadFile:(NSString*)url
 {
     BOOL allow = FALSE;
-    NSArray* allowedDomains = [NSArray arrayWithObjects: @"wix.com", @"parastorage.com", @"wixstatic.com", [site stringValue], nil];
-    
     for(int i = 0; i < [allowedDomains count]; i++)
     {
         if ([url rangeOfString:[allowedDomains objectAtIndex:i]].location != NSNotFound)
@@ -62,14 +66,26 @@ NSMutableSet* Bandwidth;
 -(void)startThread
 {
     NSError * error = nil;
-    NSString *indexHTML = [self downloadFile:[site stringValue]];
     
+    //==== Propriotery to wix.com ======
+    allowedDomains = [NSArray arrayWithObjects: @"wix.com", @"parastorage.com", @"wixstatic.com", [site stringValue], nil];
+    wixTags = [NSArray arrayWithObjects: @"[tdr]",@"[baseThemeDir]" @"[webThemeDir]", @"[themeDir]", @"[ulc]", @"SKIN_ICON_PATH+", nil];
+    wixTagsURL = [NSArray arrayWithObjects: @"/", @"/", @"/", @"/", @"/", @"/", nil];
+    //[tdr],[baseThemeDir]      =   BASE_THEME_DIRECTORY
+    //[themeDir]                =   THEME_DIRECTORY
+    //[webThemeDir]             =   WEB_THEME_DIRECTORY
+    //==================================
+    
+    binExtentions = [NSArray arrayWithObjects: @"ico", @"png", @"jpg", @"jpeg", @"gif", @"mp3", @"wix_mp", @"swf", nil]; //wix_mp looks like png format
+    txtExtentions = [NSArray arrayWithObjects: @"js", @"json", @"css", nil];
     DownloadPath = [NSString stringWithFormat:@"%@/Downloads/%@",NSHomeDirectory(),[[domain stringValue] stringByReplacingOccurrencesOfString:@"http://" withString:@""]];
     
+    NSString *indexHTML = [self downloadFile:[site stringValue]];
+  
     //Prevent : in the directory name as port#
     DownloadPath = [DownloadPath stringByReplacingOccurrencesOfString:@":" withString:@"-"];
     [[NSFileManager defaultManager] createDirectoryAtPath:DownloadPath withIntermediateDirectories:NO attributes:nil error:&error];
-    
+
     //Save original
     [indexHTML writeToFile:[NSString stringWithFormat:@"%@/index.original.html",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
     
@@ -104,7 +120,7 @@ NSMutableSet* Bandwidth;
             }
             dirRoot = [self pathFromURL:fileDownload];
             
-            [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/%@",DownloadPath,dirRoot] withIntermediateDirectories:YES attributes:nil error:&error];
+            [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@%@",DownloadPath,dirRoot] withIntermediateDirectories:YES attributes:nil error:&error];
             
             NSString* fileRoot = [domainRoot objectAtIndex:[domainRoot count]-1];
             //Get rid of ? in the filename. This is ussually means the the file at the server is dynamic. like a PHP script but we don't care, we need static
@@ -115,13 +131,13 @@ NSMutableSet* Bandwidth;
             }
             //===================================
             
-            if([[fileRoot pathExtension] isEqualToString:@"ico"] || [[fileRoot pathExtension] isEqualToString:@"jpg"]) //binary files, no analisys needed
+            if([binExtentions containsObject:[fileRoot pathExtension]]) //binary files, no analisys needed
             {
                 NSData* webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:[jsonHTTP objectAtIndex:i]]];
                 
                 //[self Debug:[NSString stringWithFormat:@"Downloading Binary: %@", fileRoot]];
                 
-                if ([webBinary writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,dirRoot,fileRoot] atomically:YES])
+                if ([webBinary writeToFile:[NSString stringWithFormat:@"%@%@/%@",DownloadPath,dirRoot,fileRoot] atomically:YES])
                 {
                     //[self Debug:[NSString stringWithFormat:@"Saved %@", fileRoot]];
                 }
@@ -157,11 +173,9 @@ NSMutableSet* Bandwidth;
             
             if(replace == YES)
             {
-                indexHTML = [indexHTML stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"http://%@/%@/%@",[domainRoot objectAtIndex:0],dirRoot,[domainRoot objectAtIndex:[domainRoot count]-1]] withString:[NSString stringWithFormat:@"%@/%@/%@",[domain stringValue],dirRoot,fileRoot]];
+                 [self Debug:[NSString stringWithFormat:@"Replace %@ > %@", fileDownload,[NSString stringWithFormat:@"%@%@/%@",[domain stringValue],dirRoot,fileRoot]]];
+                indexHTML = [indexHTML stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"\"%@\"",fileDownload] withString:[NSString stringWithFormat:@"\"%@%@/%@\"",[domain stringValue],dirRoot,fileRoot]];
             }
-            
-            //Replace main domain
-            indexHTML = [indexHTML stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"\"domain\":\"%@\"",[domainRoot objectAtIndex:0]] withString:[NSString stringWithFormat:@"\"domain\":\"%@\"",[[domain stringValue] stringByReplacingOccurrencesOfString:@"http://" withString:@""]]];
         }
         
         float totalcount = [jsonHTTP count];
@@ -169,6 +183,14 @@ NSMutableSet* Bandwidth;
         [percent setStringValue:[NSString stringWithFormat:@"%.1f %%", currentcount / totalcount * 100]];
         [progress setDoubleValue:i];
     }
+    
+    //Replace important static entries
+    //===================================
+    indexHTML = [indexHTML stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"\"domain\":\"%@\"",[[site stringValue] stringByReplacingOccurrencesOfString:@"http://" withString:@""]] withString:[NSString stringWithFormat:@"\"domain\":\"%@\"",[[domain stringValue] stringByReplacingOccurrencesOfString:@"http://" withString:@""]]];
+    
+    indexHTML = [indexHTML stringByReplacingOccurrencesOfString:@"\"baseDomain\":\"wix.com\"" withString:[NSString stringWithFormat:@"\"domain\":\"%@\"",[[[domain stringValue] stringByReplacingOccurrencesOfString:@"http://" withString:@""] stringByReplacingOccurrencesOfString:@"www." withString:@""]]];
+    
+    //===================================
     
     if ([php state] == NSOnState)
     {
@@ -211,7 +233,7 @@ NSMutableSet* Bandwidth;
             [HTTPServer setCurrentDirectoryPath:DownloadPath];
             [HTTPServer launch];
             //[HTTPServer waitUntilExit];
-            
+            sleep(3);
             [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[[domain stringValue] stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]]];
         }
         @catch (NSException *exception)
@@ -248,17 +270,17 @@ NSMutableSet* Bandwidth;
     {
         [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/%@",DownloadPath,[self pathFromURL:file]] withIntermediateDirectories:YES attributes:nil error:nil];
         
+        [self Debug:[NSString stringWithFormat:@"Replace %@ > %@", file,[NSString stringWithFormat:@"%@%@/%@",[domain stringValue],[self pathFromURL:file],fileRoot]]];
+        webfile = [webfile stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"\"%@\"",file] withString:[NSString stringWithFormat:@"\"%@%@/%@\"",[domain stringValue],[self pathFromURL:file],fileRoot]];
         [webfile writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],fileRoot] atomically:YES encoding:NSUTF8StringEncoding error:nil];
         
-        NSArray* binExtentions = [NSArray arrayWithObjects: @"png", @"jpg", @"jpeg", @"gif", @"mp3", @"wix_mp", nil]; //wix_mp looks like png format
-        NSArray* txtExtentions = [NSArray arrayWithObjects: @"js", @"css", nil];
         NSData* webBinary;
         NSArray *split;
         
         if([[fileRoot pathExtension] isEqualToString:@"js"])
         {
             split = [webfile componentsSeparatedByString: @";"];
-            NSArray* jsExtentions = [NSArray arrayWithObjects: @"background-image:url",@"background:url", nil];
+            NSArray* jsExtentions = [NSArray arrayWithObjects: @"background-image:url",@"background:url",@"iconUrl:", nil];
             for(int u = 0; u < [split count]; u++)
             {
                 NSString* img = [split objectAtIndex:u];
@@ -278,19 +300,33 @@ NSMutableSet* Bandwidth;
                         }
                         @catch (NSException *exception)
                         {
-                            //TODO: make this better
+                            @try
+                            {
+                                NSArray* tagSplit = [[split objectAtIndex:u] componentsSeparatedByString: @"\""];
+                                for(int t = 0; t < [tagSplit count]; t++)
+                                {
+                                    if ([[tagSplit objectAtIndex:t] rangeOfString:@"/"].location != NSNotFound)
+                                    {
+                                        img = [tagSplit objectAtIndex:t];
+                                        break;
+                                    }
+                                }
+                            }
+                            @catch (NSException *exception)
+                            {
                             return;
+                            }
                         }
                     }
                 }
                 if (link)
                 {
+                    img = [self pathTagCleanup:img];
+                    
                     [self Debug:[NSString stringWithFormat:@"\t(%@) Hidden File: %@",fileRoot,img]];
                     //http://localhost/skins/images/wysiwyg/core/themes/base/
                     
-                    //THEME_DIRECTORY
-                    //WEB_THEME_DIRECTORY
-                    //BASE_THEME_DIRECTORY
+                    [[NSFileManager defaultManager] createDirectoryAtPath:[[NSString stringWithFormat:@"%@%@/%@",DownloadPath,[self pathFromURL:file],img] stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
                     
                     //TODO: Finish this part
                 }
@@ -317,17 +353,12 @@ NSMutableSet* Bandwidth;
                 
                 if (link)
                 {
-                    //Cleanup other Ajax crap
-                    img = [img stringByReplacingOccurrencesOfString:@"]" withString:@""];
-                    img = [img stringByReplacingOccurrencesOfString:@"[" withString:@""];
-                    img = [img stringByReplacingOccurrencesOfString:@"{" withString:@""];
-                    img = [img stringByReplacingOccurrencesOfString:@"}" withString:@""];
-                    img = [img stringByReplacingOccurrencesOfString:@"\"" withString:@""];
+                    img = [self pathTagCleanup:img];
                     
                     [self Debug:[NSString stringWithFormat:@"\t(%@) Hidden File: %@",fileRoot,img]];
                     //http://static.parastorage.com/services/bootstrap/2.648.0/index.json
                     
-                    [[NSFileManager defaultManager] createDirectoryAtPath:[[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],img] stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
+                    [[NSFileManager defaultManager] createDirectoryAtPath:[[NSString stringWithFormat:@"%@%@/%@",DownloadPath,[self pathFromURL:file],img] stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
                     
                     //We don't care about the Editor, we just want our website.
                     if ([img rangeOfString:@"wysiwyg/editor"].location == NSNotFound && [img rangeOfString:@"skins/editor"].location == NSNotFound)
@@ -337,7 +368,7 @@ NSMutableSet* Bandwidth;
                             [self Debug:[NSString stringWithFormat:@"\tDownloading Media File: %@", img]];
                             webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:[NSString stringWithFormat:@"http://static.wixstatic.com/media/%@",img]]];
                             
-                            if ([webBinary writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],img] atomically:YES])
+                            if ([webBinary writeToFile:[NSString stringWithFormat:@"%@%@/%@",DownloadPath,[self pathFromURL:file],img] atomically:YES])
                             {
                                 //TODO: wix has a dynamic image by size, make php to emulate the same
                                 if ([php state] == NSOnState)
@@ -350,13 +381,23 @@ NSMutableSet* Bandwidth;
                         {
                             [self Debug:[NSString stringWithFormat:@"\tDownload Hidden File: %@/%@", [file stringByDeletingLastPathComponent],img]];
                             [self fileAnalyzer:[NSString stringWithFormat:@"%@/%@",[file stringByDeletingLastPathComponent],img] :[img lastPathComponent]];
-                            
                         }
                     }
                 }
             }
         }
     }
+}
+
+-(NSString*)pathTagCleanup:(NSString*)path
+{
+    //Cleanup Ajax crap
+    path = [path stringByReplacingOccurrencesOfString:@"]" withString:@""];
+    path = [path stringByReplacingOccurrencesOfString:@"[" withString:@""];
+    path = [path stringByReplacingOccurrencesOfString:@"{" withString:@""];
+    path = [path stringByReplacingOccurrencesOfString:@"}" withString:@""];
+    path = [path stringByReplacingOccurrencesOfString:@"\"" withString:@""];
+    return path;
 }
 
 -(NSString*)pathFromURL:(NSString*)url
@@ -387,7 +428,7 @@ NSMutableSet* Bandwidth;
         
         //Keeps track of redundant downloads, optimizes bandwidth
         Bandwidth = [[NSMutableSet alloc] init];
-        
+       
         /*
          if ([[site stringValue] rangeOfString:@"wix.com"].location == NSNotFound)
          {
@@ -420,6 +461,27 @@ NSMutableSet* Bandwidth;
 
 - (void)Debug:(NSString*)d
 {
-    NSLog(@"%@",d);
+    //NSLog(@"%@",d);
+    printf("%s\n",[d UTF8String]);
+    
+    NSString* logpath = [NSString stringWithFormat:@"%@/log.txt",DownloadPath];
+    NSFileHandle* fh = [NSFileHandle fileHandleForWritingAtPath:logpath];
+    
+    if (!fh)
+    {
+        [[NSFileManager defaultManager] createFileAtPath:logpath contents:nil attributes:nil];
+        fh = [NSFileHandle fileHandleForWritingAtPath:logpath];
+    }
+    if ( !fh ) return;
+    
+    @try
+    {
+        [fh seekToEndOfFile];
+        [fh writeData:[[NSString stringWithFormat:@"%@\n",d] dataUsingEncoding:NSUTF8StringEncoding]];
+    }
+    @catch (NSException * e)
+    {
+    }
+    [fh closeFile];
 }
 @end
