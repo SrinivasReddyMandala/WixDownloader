@@ -50,6 +50,12 @@ NSArray* wixTagsURL;
             [Bandwidth addObject:url];
             return [[NSString alloc] initWithData:indexData encoding:NSUTF8StringEncoding];
         }
+        else  if ([urlResponse statusCode] == 301)
+        {
+            [self Debug:[NSString stringWithFormat:@"302 Moved > %@", [[NSString alloc] initWithData:indexData encoding:NSUTF8StringEncoding]]];
+            //TODO catch "Server:" reply
+            //_api/dynamicmodel
+        }
         else
         {
             //[self Debug:[NSString stringWithFormat:@"Downloading ERROR (%ld): %@", [urlResponse statusCode], url]];
@@ -68,7 +74,9 @@ NSArray* wixTagsURL;
     NSError * error = nil;
     
     //==== Propriotery to wix.com ======
-    allowedDomains = [NSArray arrayWithObjects: @"wix.com", @"parastorage.com", @"wixstatic.com", [site stringValue], nil];
+    //public.app34.aus.wixpress.com
+    //public.app36.aus.wixpress.com
+    allowedDomains = [NSArray arrayWithObjects: @"wix.com", @"parastorage.com", @"wixstatic.com", @"wixpress.com", [site stringValue], nil];
     wixTags = [NSArray arrayWithObjects: @"[tdr]",@"[baseThemeDir]" @"[webThemeDir]", @"[themeDir]", @"[ulc]", @"SKIN_ICON_PATH+", nil];
     wixTagsURL = [NSArray arrayWithObjects: @"/", @"/", @"/", @"/", @"/", @"/", nil];
     //[tdr],[baseThemeDir]      =   BASE_THEME_DIRECTORY
@@ -81,11 +89,11 @@ NSArray* wixTagsURL;
     DownloadPath = [NSString stringWithFormat:@"%@/Downloads/%@",NSHomeDirectory(),[[domain stringValue] stringByReplacingOccurrencesOfString:@"http://" withString:@""]];
     
     NSString *indexHTML = [self downloadFile:[site stringValue]];
-  
+    
     //Prevent : in the directory name as port#
     DownloadPath = [DownloadPath stringByReplacingOccurrencesOfString:@":" withString:@"-"];
     [[NSFileManager defaultManager] createDirectoryAtPath:DownloadPath withIntermediateDirectories:NO attributes:nil error:&error];
-
+    
     //Save original
     [indexHTML writeToFile:[NSString stringWithFormat:@"%@/index.original.html",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
     
@@ -112,12 +120,13 @@ NSArray* wixTagsURL;
                 //=========== index.json ============
                 // This is tricky to detect, but wix has many index.json
                 // hidden in directories, make sure we don't miss them
-                if ([dirRoot rangeOfString:@"?"].location == NSNotFound)
+                if ([dirRoot rangeOfString:@"?"].location == NSNotFound && [[dirRoot pathExtension] length] < 3)
                 {
                     [self fileAnalyzer:[NSString stringWithFormat:@"http://%@/%@index.json",[domainRoot objectAtIndex:0],dirRoot] :@"index.json"];
                 }
                 //=========== index.json ============
             }
+            
             dirRoot = [self pathFromURL:fileDownload];
             
             [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@%@",DownloadPath,dirRoot] withIntermediateDirectories:YES attributes:nil error:&error];
@@ -173,7 +182,7 @@ NSArray* wixTagsURL;
             
             if(replace == YES)
             {
-                 [self Debug:[NSString stringWithFormat:@"Replace %@ > %@", fileDownload,[NSString stringWithFormat:@"%@%@/%@",[domain stringValue],dirRoot,fileRoot]]];
+                [self Debug:[NSString stringWithFormat:@"Replace %@ > %@", fileDownload,[NSString stringWithFormat:@"%@%@/%@",[domain stringValue],dirRoot,fileRoot]]];
                 indexHTML = [indexHTML stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"\"%@\"",fileDownload] withString:[NSString stringWithFormat:@"\"%@%@/%@\"",[domain stringValue],dirRoot,fileRoot]];
             }
         }
@@ -223,10 +232,11 @@ NSArray* wixTagsURL;
     // TODO: Looks like some "skin" graphics files are hidden deep inside java
     // do a server sweep and look for 404 requests on live Safari view.
     
-    if ([[domain stringValue] rangeOfString:@"127.0.0.1"].location != NSNotFound)
+    if ([[domain stringValue] rangeOfString:@"127.0.0.1:8000"].location != NSNotFound)
     {
         @try
         {
+            [self Debug:@"Starting HTTPServer ..."];
             NSTask* HTTPServer = [[NSTask alloc] init];
             [HTTPServer setLaunchPath:@"/usr/bin/python"];
             [HTTPServer setArguments:@[@"-m", @"SimpleHTTPServer"]];
@@ -238,28 +248,39 @@ NSArray* wixTagsURL;
         }
         @catch (NSException *exception)
         {
-            NSLog(@"HTTPServer Error: %@", exception);
+            [self Debug:[NSString stringWithFormat:@"HTTPServer Error: %@", exception]];
         }
     }
     
-    [percent setStringValue:@"100 %%"];
+    [percent setStringValue:@"100 %"];
 }
 
 -(NSString*)http_prefixBug:(NSString*)url
 {
     NSArray* check = [url componentsSeparatedByString: @"/"];
-
+    
     if (![[check objectAtIndex:1] isEqualToString:@""])
     {
         [self Debug:[NSString stringWithFormat:@"[Xcode Bug] Correcting URL > %@",url]];
         url = [url stringByReplacingOccurrencesOfString:@"http:/" withString:@"http://"];
     }
-  return url;
+    return url;
+}
+
+-(NSString*)http_correctURL:(NSString*)url
+{
+    url = [url stringByReplacingOccurrencesOfString:@"/./" withString:@"/"];
+    while ([url rangeOfString:@"//"].location != NSNotFound)
+    {
+        url = [url stringByReplacingOccurrencesOfString:@"//" withString:@"/"];
+    }
+    return url;
 }
 
 -(void)fileAnalyzer:(NSString*)file :(NSString*)fileRoot
 {
     //Apple Bug? when doing stringByDeletingLastPathComponent for URL it kicks out one of slash from http://
+    file = [self http_correctURL: file];
     file = [self http_prefixBug: file];
     
     [self Debug:[NSString stringWithFormat:@"> File Analyzer: %@", file]];
@@ -279,8 +300,17 @@ NSArray* wixTagsURL;
         
         if([[fileRoot pathExtension] isEqualToString:@"js"])
         {
-            split = [webfile componentsSeparatedByString: @";"];
+            if ([webfile rangeOfString:@","].location != NSNotFound)
+            {
+                split = [webfile componentsSeparatedByString: @","];
+            }
+            else if ([webfile rangeOfString:@";"].location != NSNotFound)
+            {
+                split = [webfile componentsSeparatedByString: @";"];
+            }
+            
             NSArray* jsExtentions = [NSArray arrayWithObjects: @"background-image:url",@"background:url",@"iconUrl:", nil];
+            
             for(int u = 0; u < [split count]; u++)
             {
                 NSString* img = [split objectAtIndex:u];
@@ -314,7 +344,7 @@ NSArray* wixTagsURL;
                             }
                             @catch (NSException *exception)
                             {
-                            return;
+                                return;
                             }
                         }
                     }
@@ -335,17 +365,33 @@ NSArray* wixTagsURL;
         else if([[fileRoot pathExtension] isEqualToString:@"json"])
         {
             split = [webfile componentsSeparatedByString: @","];
-            NSArray* jsonExtentions = [NSArray arrayWithObjects: @"\"resources\":", @"\"uri\":",@"\"url\":", nil];
+            NSArray* jsonExtentions = [NSArray arrayWithObjects:@"\"url\":", @"\"uri\":", nil];
+            NSString* img = @"";
+            NSString* resources_url = @"";
             
             for(int u = 0; u < [split count]; u++)
             {
-                NSString* img = [split objectAtIndex:u];
                 BOOL link = FALSE;
                 for(int i = 0; i < [jsonExtentions count]; i++)
                 {
+                    if ([[split objectAtIndex:u] rangeOfString:@"\"resources\":"].location != NSNotFound)
+                    {
+                        resources_url = [NSString stringWithFormat:@"%@/",[self pathTagCleanup:img]];
+                    }
+                    img = [img stringByReplacingOccurrencesOfString:@"\"resources\":" withString:@""];
+                    
                     if ([[split objectAtIndex:u] rangeOfString:[jsonExtentions objectAtIndex:i]].location != NSNotFound)
                     {
-                        img = [img stringByReplacingOccurrencesOfString:[jsonExtentions objectAtIndex:i] withString:@""];
+                        //Ahh this is tricky Ajax stuff ...if there is a { infront it means there is an extra "previous" incapsulation to the url path!
+                        if ([[split objectAtIndex:u] rangeOfString:[NSString stringWithFormat:@"{%@",[jsonExtentions objectAtIndex:i]]].location != NSNotFound)
+                        {
+                            img = [NSString stringWithFormat:@"%@%@",resources_url,[[split objectAtIndex:u] stringByReplacingOccurrencesOfString:[jsonExtentions objectAtIndex:i] withString:@""]];
+                        }
+                        else
+                        {
+                            img = [[split objectAtIndex:u] stringByReplacingOccurrencesOfString:[jsonExtentions objectAtIndex:i] withString:@""];
+                        }
+
                         link = TRUE;
                         break;
                     }
@@ -391,7 +437,6 @@ NSArray* wixTagsURL;
 
 -(NSString*)pathTagCleanup:(NSString*)path
 {
-    //Cleanup Ajax crap
     path = [path stringByReplacingOccurrencesOfString:@"]" withString:@""];
     path = [path stringByReplacingOccurrencesOfString:@"[" withString:@""];
     path = [path stringByReplacingOccurrencesOfString:@"{" withString:@""];
@@ -400,12 +445,23 @@ NSArray* wixTagsURL;
     return path;
 }
 
+
+
 -(NSString*)pathFromURL:(NSString*)url
 {
     url = [url stringByReplacingOccurrencesOfString:@"http://" withString:@""];
     NSArray* domainRoot = [url componentsSeparatedByString: @"/"];
-    return [[url stringByReplacingOccurrencesOfString:[domainRoot objectAtIndex:0] withString:@""] stringByDeletingLastPathComponent];
+    
+    if([[domainRoot objectAtIndex:0] rangeOfString:@"."].location != NSNotFound)
+    {
+         return [[url stringByReplacingOccurrencesOfString:[domainRoot objectAtIndex:0] withString:@""] stringByDeletingLastPathComponent];
+    }
+    else
+    {
+        return [url stringByDeletingLastPathComponent];
+    }
 }
+
 - (IBAction)download_Click:(id)sender;
 {
     if([thread isExecuting])
@@ -428,7 +484,7 @@ NSArray* wixTagsURL;
         
         //Keeps track of redundant downloads, optimizes bandwidth
         Bandwidth = [[NSMutableSet alloc] init];
-       
+        
         /*
          if ([[site stringValue] rangeOfString:@"wix.com"].location == NSNotFound)
          {
@@ -445,7 +501,7 @@ NSArray* wixTagsURL;
             [domain setStringValue:[NSString stringWithFormat:@"http://%@",[domain stringValue]]];
         }
         
-        if ([[domain stringValue] rangeOfString:@"127.0.0.1"].location != NSNotFound)
+        if ([[domain stringValue] rangeOfString:@"127.0.0.1"].location != NSNotFound && [[[domain stringValue] stringByReplacingOccurrencesOfString:@"http://" withString:@""] rangeOfString:@":"].location == NSNotFound)
         {
             [domain setStringValue:[NSString stringWithFormat:@"%@:8000",[domain stringValue]]];
             [php setState:FALSE];
