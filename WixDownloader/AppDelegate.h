@@ -6,6 +6,7 @@
     IBOutlet NSTextField* domain;
     IBOutlet NSButton* download;
     IBOutlet NSButton* media;
+    IBOutlet NSButton* editor;
     IBOutlet NSButton* php;
     IBOutlet NSProgressIndicator *loading;
     IBOutlet NSProgressIndicator *progress;

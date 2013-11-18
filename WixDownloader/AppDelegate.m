@@ -32,8 +32,15 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
             break;
         }
     }
+    
+    if ([url rangeOfString:@"editor"].location != NSNotFound && [editor state] != NSOnState)
+    {
+        allow = FALSE;
+    }
+    
     if(allow && ![Bandwidth containsObject:url])
     {
+        
         //[self Debug:[NSString stringWithFormat:@"Downloading URL: %@", url]];
         
         NSHTTPURLResponse *urlResponse = nil;
@@ -64,6 +71,7 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
         {
             //[self Debug:[NSString stringWithFormat:@"Downloading ERROR (%ld): %@", [urlResponse statusCode], url]];
         }
+        
     }
     return NULL;
 }
@@ -319,9 +327,9 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
     //Apple Bug? when doing stringByDeletingLastPathComponent for URL it kicks out one of slash from http://
     file = [self http_correctURL: file];
     
-    [self Debug:[NSString stringWithFormat:@"> File Analyzer: %@", file]];
-    
     NSString* webfile = [self downloadFile:file];
+    
+    [self Debug:[NSString stringWithFormat:@"> File Analyzer: (%ld) %@", [webfile length], file]];
     
     if(webfile != NULL)
     {
@@ -412,7 +420,6 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
                 {
                     if ([[split objectAtIndex:u] rangeOfString:@"\"resources\":"].location != NSNotFound)
                     {
-                        img = [img stringByReplacingOccurrencesOfString:@"\"resources\":" withString:@""];
                         resources_url = [NSString stringWithFormat:@"%@/",[self pathTagCleanup:img]];
                     }
                     
@@ -427,6 +434,8 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
                         {
                             img = [[split objectAtIndex:u] stringByReplacingOccurrencesOfString:[jsonExtentions objectAtIndex:i] withString:@""];
                         }
+                        
+                        img = [img stringByReplacingOccurrencesOfString:@"\"resources\":" withString:@""];
                         
                         link = TRUE;
                         break;
@@ -454,7 +463,7 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
                         
                         [self Debug:[NSString stringWithFormat:@"\tSkin File: %@.js",img]];
                         
-                        if ([img rangeOfString:@"viewer/skins"].location != NSNotFound || [img rangeOfString:@"skins/core"].location != NSNotFound)
+                        if ([img rangeOfString:@"skin" options:NSCaseInsensitiveSearch].location != NSNotFound)
                         {
                             [self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@.js",skinURL,img] :[NSString stringWithFormat:@"%@.js",[img lastPathComponent]]];
                         }
@@ -472,32 +481,28 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
                     {
                         [self Debug:[NSString stringWithFormat:@"\tHidden File: %@",img]];
                         
-                        //We don't care about the Editor, we just want our website.
-                        if ([img rangeOfString:@"wysiwyg/editor"].location == NSNotFound && [img rangeOfString:@"skins/editor"].location == NSNotFound)
+                        if([binExtentions containsObject:[img pathExtension]] && [media state] == NSOnState) //binary files, no analisys needed
                         {
-                            if([binExtentions containsObject:[img pathExtension]] && [media state] == NSOnState) //binary files, no analisys needed
+                            [self Debug:[NSString stringWithFormat:@"\tDownloading Media File: %@", img]];
+                            
+                            img = [NSString stringWithFormat:@"%@/%@",mediaURL,img];
+                            
+                            webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:img]];
+                            
+                            [[NSFileManager defaultManager] createDirectoryAtPath:[[NSString stringWithFormat:@"%@/%@",DownloadPath,[self pathFromURL:img]] stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
+                            
+                            if ([webBinary writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],img] atomically:YES])
                             {
-                                [self Debug:[NSString stringWithFormat:@"\tDownloading Media File: %@", img]];
-                                
-                                img = [NSString stringWithFormat:@"%@/%@",mediaURL,img];
-                                
-                                webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:img]];
-                                
-                                [[NSFileManager defaultManager] createDirectoryAtPath:[[NSString stringWithFormat:@"%@/%@",DownloadPath,[self pathFromURL:img]] stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
-                                
-                                if ([webBinary writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],img] atomically:YES])
+                                //TODO: wix has a dynamic image by size, make php to emulate the same
+                                if ([php state] == NSOnState)
                                 {
-                                    //TODO: wix has a dynamic image by size, make php to emulate the same
-                                    if ([php state] == NSOnState)
-                                    {
-                                        
-                                    }
+                                    
                                 }
                             }
-                            else if([txtExtentions containsObject:[img pathExtension]]) //binary files, no analisys needed
-                            {
-                                [self fileAnalyzer:[NSString stringWithFormat:@"%@/%@",[file stringByDeletingLastPathComponent],img] :[img lastPathComponent]];
-                            }
+                        }
+                        else if([txtExtentions containsObject:[img pathExtension]]) //binary files, no analisys needed
+                        {
+                            [self fileAnalyzer:[NSString stringWithFormat:@"%@/%@",[file stringByDeletingLastPathComponent],img] :[img lastPathComponent]];
                         }
                     }
                 }
@@ -512,6 +517,7 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
     path = [path stringByReplacingOccurrencesOfString:@"[" withString:@""];
     path = [path stringByReplacingOccurrencesOfString:@"{" withString:@""];
     path = [path stringByReplacingOccurrencesOfString:@"}" withString:@""];
+    path = [path stringByReplacingOccurrencesOfString:@":" withString:@""];
     path = [path stringByReplacingOccurrencesOfString:@"\"" withString:@""];
     return path;
 }

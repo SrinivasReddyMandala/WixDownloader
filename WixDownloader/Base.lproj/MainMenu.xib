@@ -11,10 +11,10 @@
         <window title="WixDownloader" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" animationBehavior="default" id="371">
             <windowStyleMask key="styleMask" titled="YES" closable="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
-            <rect key="contentRect" x="335" y="390" width="523" height="273"/>
+            <rect key="contentRect" x="335" y="390" width="560" height="273"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1680" height="1028"/>
             <view key="contentView" id="372">
-                <rect key="frame" x="0.0" y="0.0" width="523" height="273"/>
+                <rect key="frame" x="0.0" y="0.0" width="560" height="273"/>
                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                 <subviews>
                     <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Bz4-sh-hFC">
@@ -39,7 +39,7 @@
                         </connections>
                     </button>
                     <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="pMW-pt-1mr">
-                        <rect key="frame" x="252" y="180" width="251" height="22"/>
+                        <rect key="frame" x="252" y="180" width="288" height="22"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" title="http://" drawsBackground="YES" id="zbG-fb-S5c">
                             <font key="font" metaFont="system"/>
@@ -75,7 +75,7 @@
                         </textFieldCell>
                     </textField>
                     <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="GY1-Af-JdE">
-                        <rect key="frame" x="252" y="108" width="251" height="22"/>
+                        <rect key="frame" x="252" y="108" width="288" height="22"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" title="http://" drawsBackground="YES" id="Vhb-Tx-eWA">
                             <font key="font" metaFont="system"/>
@@ -84,27 +84,35 @@
                         </textFieldCell>
                     </textField>
                     <box autoresizesSubviews="NO" verticalHuggingPriority="750" fixedFrame="YES" title="Box" boxType="separator" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="vnm-sr-vSJ">
-                        <rect key="frame" x="252" y="225" width="251" height="5"/>
+                        <rect key="frame" x="252" y="225" width="288" height="5"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <color key="borderColor" white="0.0" alpha="0.41999999999999998" colorSpace="calibratedWhite"/>
                         <color key="fillColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                         <font key="titleFont" metaFont="system"/>
                     </box>
                     <box autoresizesSubviews="NO" verticalHuggingPriority="750" fixedFrame="YES" title="Box" boxType="separator" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="48h-OD-mDr">
-                        <rect key="frame" x="252" y="72" width="251" height="5"/>
+                        <rect key="frame" x="252" y="72" width="288" height="5"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <color key="borderColor" white="0.0" alpha="0.41999999999999998" colorSpace="calibratedWhite"/>
                         <color key="fillColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                         <font key="titleFont" metaFont="system"/>
                     </box>
                     <progressIndicator hidden="YES" horizontalHuggingPriority="750" verticalHuggingPriority="750" fixedFrame="YES" maxValue="100" bezeled="NO" indeterminate="YES" controlSize="small" style="spinning" translatesAutoresizingMaskIntoConstraints="NO" id="h3r-qr-l1T">
-                        <rect key="frame" x="487" y="17" width="16" height="16"/>
+                        <rect key="frame" x="524" y="17" width="16" height="16"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     </progressIndicator>
                     <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="9AZ-TB-X5o">
                         <rect key="frame" x="250" y="156" width="127" height="18"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <buttonCell key="cell" type="check" title="Download Media" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="iPf-8B-gOf">
+                            <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                            <font key="font" metaFont="system"/>
+                        </buttonCell>
+                    </button>
+                    <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="PHa-n8-CJk">
+                        <rect key="frame" x="399" y="156" width="127" height="18"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <buttonCell key="cell" type="check" title="Download Editor" bezelStyle="regularSquare" imagePosition="left" inset="2" id="dRG-Cd-cRU">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
@@ -118,11 +126,11 @@
                         </buttonCell>
                     </button>
                     <progressIndicator fixedFrame="YES" maxValue="100" indeterminate="YES" style="bar" translatesAutoresizingMaskIntoConstraints="NO" id="Rhr-OJ-NhG">
-                        <rect key="frame" x="252" y="15" width="180" height="20"/>
+                        <rect key="frame" x="252" y="15" width="212" height="20"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     </progressIndicator>
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="E7k-97-1W4">
-                        <rect key="frame" x="438" y="17" width="48" height="17"/>
+                        <rect key="frame" x="475" y="17" width="48" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="%" id="cAR-mo-jgQ">
                             <font key="font" metaFont="system"/>
@@ -137,6 +145,7 @@
             <connections>
                 <outlet property="domain" destination="GY1-Af-JdE" id="hO9-e5-dDO"/>
                 <outlet property="download" destination="kom-xy-4V1" id="qxc-fk-zcY"/>
+                <outlet property="editor" destination="PHa-n8-CJk" id="lVW-HB-WBY"/>
                 <outlet property="loading" destination="h3r-qr-l1T" id="ppR-Ie-shg"/>
                 <outlet property="media" destination="9AZ-TB-X5o" id="8I3-OD-Gwt"/>
                 <outlet property="percent" destination="E7k-97-1W4" id="QUb-k6-Isy"/>
