@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		664BA5B3183AAFEC00D864EF /* ads.html in Resources */ = {isa = PBXBuildFile; fileRef = 664BA5B2183AAFEC00D864EF /* ads.html */; };
 		6676BDBB18335444004A463B /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6676BDBA18335444004A463B /* Cocoa.framework */; };
 		6676BDC718335444004A463B /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 6676BDC618335444004A463B /* main.m */; };
 		6676BDCE18335444004A463B /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 6676BDCD18335444004A463B /* AppDelegate.m */; };
@@ -16,6 +17,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		664BA5B2183AAFEC00D864EF /* ads.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = ads.html; path = Resources/ads.html; sourceTree = "<group>"; };
 		6676BDB718335444004A463B /* WixDownloader.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WixDownloader.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6676BDBA18335444004A463B /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		6676BDC218335444004A463B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -80,6 +82,7 @@
 		6676BDEE18336A20004A463B /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				664BA5B2183AAFEC00D864EF /* ads.html */,
 				6676BDF818336EA0004A463B /* wix.icns */,
 				6676BDF118336BD8004A463B /* pwned.png */,
 			);
@@ -150,6 +153,7 @@
 				6676BDF918336EA0004A463B /* wix.icns in Resources */,
 				6676BDD118335444004A463B /* MainMenu.xib in Resources */,
 				6676BDF218336BD8004A463B /* pwned.png in Resources */,
+				664BA5B3183AAFEC00D864EF /* ads.html in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

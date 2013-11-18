@@ -152,7 +152,7 @@
                 <outlet property="php" destination="Te7-Vg-EAt" id="aym-wW-jAW"/>
                 <outlet property="progress" destination="Rhr-OJ-NhG" id="H1K-tk-qMs"/>
                 <outlet property="site" destination="pMW-pt-1mr" id="704-O2-lNQ"/>
-                <outlet property="window" destination="371" id="c08-hF-JWe"/>
+                <outlet property="window" destination="371" id="keR-mA-nTW"/>
             </connections>
         </customObject>
     </objects>

@@ -1,7 +1,7 @@
 #import "AppDelegate.h"
-//#include <stdlib.h>
 
 @implementation AppDelegate
+
 NSThread *thread;
 NSString* DownloadPath;
 NSMutableSet* Bandwidth;
@@ -16,9 +16,15 @@ NSString* webURL = @"http://static.parastorage.com/services/web/2.648.0";
 NSString* coreURL = @"http://static.parastorage.com/services/core/2.648.0";
 NSString* mediaURL = @"http://static.wixstatic.com/media";
 
-- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication
+- (id) init
 {
-    return YES;
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(windowWillClose:) name:NSWindowWillCloseNotification object:nil];
+    return self;
+}
+
+- (void)windowWillClose:(NSNotification *)notification
+{
+    [NSApp terminate:self];
 }
 
 -(NSString*)downloadFile:(NSString*)url
@@ -98,17 +104,19 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
     //==================================
     
     http = [NSArray arrayWithObjects: @"http://", @"https://", nil];
-    binExtentions = [NSArray arrayWithObjects: @"ico", @"png", @"jpg", @"jpeg", @"gif", @"mp3", @"wix_mp", @"swf", nil]; //wix_mp looks like png format
+    binExtentions = [NSArray arrayWithObjects: @"ico", @"png", @"jpg", @"jpeg", @"gif", @"mp3", @"wix_mp", @"swf", @"html", @"htm", nil]; //wix_mp looks like png format
     txtExtentions = [NSArray arrayWithObjects: @"js", @"json", @"z", @"css", nil];
     DownloadPath = [NSString stringWithFormat:@"%@/Downloads/%@",NSHomeDirectory(),[[domain stringValue] stringByReplacingOccurrencesOfString:@"http://" withString:@""]];
     
     NSString *indexHTML = [self downloadFile:[site stringValue]];
+    NSString *indexADS = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/ads.html",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
     
-    //Prevent : in the directory name as port#
+    //Prevent ":" in the directory name as port#
     DownloadPath = [DownloadPath stringByReplacingOccurrencesOfString:@":" withString:@"-"];
     [[NSFileManager defaultManager] createDirectoryAtPath:DownloadPath withIntermediateDirectories:NO attributes:nil error:&error];
     
     //Save original
+    indexHTML = [indexHTML stringByReplacingOccurrencesOfString:indexADS withString:@""]; //Remove Ads
     [indexHTML writeToFile:[NSString stringWithFormat:@"%@/index.original.html",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
     
     //Yes Son! split it
@@ -528,7 +536,7 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
     NSArray* domainRoot = [url componentsSeparatedByString: @"/"]; //[url pathComponents];
     long end = [domainRoot count];
     
-    if(![[url pathExtension] isEqualToString:@""])
+    if([binExtentions containsObject:[url pathExtension]] || [txtExtentions containsObject:[url pathExtension]] || [url rangeOfString:@"?"].location != NSNotFound)
     {
         end = [domainRoot count] - 1;
     }
