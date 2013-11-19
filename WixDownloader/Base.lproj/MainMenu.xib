@@ -47,6 +47,15 @@
                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
+                    <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="HRm-Sn-J65">
+                        <rect key="frame" x="412" y="44" width="52" height="22"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" title="1" drawsBackground="YES" id="UDJ-qM-ZGD">
+                            <font key="font" metaFont="system"/>
+                            <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="eA7-4h-TQJ">
                         <rect key="frame" x="250" y="236" width="228" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
@@ -60,6 +69,15 @@
                         <rect key="frame" x="250" y="205" width="114" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Wix.com Website:" id="WPk-HB-84d">
+                            <font key="font" metaFont="system"/>
+                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
+                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="F0s-sp-vRY">
+                        <rect key="frame" x="363" y="46" width="40" height="17"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Level:" id="LLU-xg-fSL">
                             <font key="font" metaFont="system"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -146,6 +164,7 @@
                 <outlet property="domain" destination="GY1-Af-JdE" id="hO9-e5-dDO"/>
                 <outlet property="download" destination="kom-xy-4V1" id="qxc-fk-zcY"/>
                 <outlet property="editor" destination="PHa-n8-CJk" id="lVW-HB-WBY"/>
+                <outlet property="level" destination="HRm-Sn-J65" id="EDM-pZ-Rbt"/>
                 <outlet property="loading" destination="h3r-qr-l1T" id="ppR-Ie-shg"/>
                 <outlet property="media" destination="9AZ-TB-X5o" id="8I3-OD-Gwt"/>
                 <outlet property="percent" destination="E7k-97-1W4" id="QUb-k6-Isy"/>

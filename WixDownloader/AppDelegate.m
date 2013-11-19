@@ -39,14 +39,15 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
         }
     }
     
-    if ([url rangeOfString:@"editor"].location != NSNotFound && [editor state] != NSOnState)
+    if ([url rangeOfString:@"editor" options:NSCaseInsensitiveSearch].location != NSNotFound && [editor state] != NSOnState)
     {
+        //http://static.parastorage.com/services/skins/2.648.0/javascript/wysiwyg/viewer/skins/button/AdminLoginButtonSkin.js
         allow = FALSE;
     }
     
     if(allow && ![Bandwidth containsObject:url])
     {
-        
+        [Bandwidth addObject:url];
         //[self Debug:[NSString stringWithFormat:@"Downloading URL: %@", url]];
         
         NSHTTPURLResponse *urlResponse = nil;
@@ -64,7 +65,7 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
         
         if ([urlResponse statusCode] == 200)
         {
-            [Bandwidth addObject:url];
+            //[Bandwidth addObject:url];
             return [[NSString alloc] initWithData:indexData encoding:NSUTF8StringEncoding];
         }
         else  if ([urlResponse statusCode] == 301)
@@ -164,7 +165,7 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
                 // hidden in directories, make sure we don't miss them
                 if ([dirRoot rangeOfString:@"?"].location == NSNotFound && [[dirRoot pathExtension] length] < 3)
                 {
-                    [self fileAnalyzer:[NSString stringWithFormat:@"http://%@/%@index.json",[domainRoot objectAtIndex:0],dirRoot] :@"index.json"];
+                    [self fileAnalyzer:[NSString stringWithFormat:@"http://%@/%@index.json",[domainRoot objectAtIndex:0],dirRoot] :@"index.json" :0];
                 }
                 //=========== index.json ============
             }
@@ -195,7 +196,7 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
             }
             else
             {
-                [self fileAnalyzer:fileDownload :fileRoot];
+                [self fileAnalyzer:fileDownload :fileRoot :0];
             }
             
             BOOL replace = YES;
@@ -330,7 +331,7 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
     return url;
 }
 
--(void)fileAnalyzer:(NSString*)file :(NSString*)fileRoot
+-(void)fileAnalyzer:(NSString*)file :(NSString*)fileRoot :(int)_level
 {
     //Apple Bug? when doing stringByDeletingLastPathComponent for URL it kicks out one of slash from http://
     file = [self http_correctURL: file];
@@ -347,10 +348,8 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
         webfile = [webfile stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"\"%@\"",file] withString:[NSString stringWithFormat:@"\"%@/%@/%@\"",[domain stringValue],[self pathFromURL:file],fileRoot]];
         [webfile writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],fileRoot] atomically:YES encoding:NSUTF8StringEncoding error:nil];
         
-        NSData* webBinary;
         NSArray *split;
-        
-        if([[fileRoot pathExtension] isEqualToString:@"js"])
+        if(([[fileRoot pathExtension] isEqualToString:@"js"] || [[fileRoot pathExtension] isEqualToString:@"json"] || [[fileRoot pathExtension] isEqualToString:@"z"]) && _level <= [[level stringValue] integerValue])
         {
             if ([webfile rangeOfString:@","].location != NSNotFound)
             {
@@ -361,158 +360,132 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
                 split = [webfile componentsSeparatedByString: @";"];
             }
             
-            NSArray* jsExtentions = [NSArray arrayWithObjects: @"background-image:url",@"background:url",@"iconUrl:", nil];
-            
             for(int u = 0; u < [split count]; u++)
             {
-                NSString* img = [split objectAtIndex:u];
+                //==================
+                NSArray* components;
+                if ([[split objectAtIndex:u] rangeOfString:@"\""].location != NSNotFound)
+                {
+                    components = [[split objectAtIndex:u] componentsSeparatedByString: @"\""];
+                }
+                else if ([[split objectAtIndex:u] rangeOfString:@"("].location != NSNotFound)
+                {
+                    components = [[split objectAtIndex:u] componentsSeparatedByString: @"("];
+                }
+                //==================
                 
-                BOOL link = FALSE;
-                for(int i = 0; i < [jsExtentions count]; i++)
+                for(int i = 0; i < [components count]; i++)
                 {
-                    if ([[split objectAtIndex:u] rangeOfString:[jsExtentions objectAtIndex:i]].location != NSNotFound)
+                    if ([[components objectAtIndex:i] rangeOfString:@";"].location != NSNotFound)
                     {
-                        @try
+                        NSArray* _components = [[split objectAtIndex:u] componentsSeparatedByString: @";"];
+                        for(int c = 0; c < [_components count]; c++)
                         {
-                            NSArray* bktLeft = [[split objectAtIndex:u] componentsSeparatedByString: @")"];
-                            NSArray* bktRight = [[bktLeft objectAtIndex:0] componentsSeparatedByString: @"("];
-                            img = [bktRight objectAtIndex:1];
-                            link = TRUE;
-                            break;
-                        }
-                        @catch (NSException *exception)
-                        {
-                            @try
+                            @try //Required
                             {
-                                NSArray* tagSplit = [[split objectAtIndex:u] componentsSeparatedByString: @"\""];
-                                for(int t = 0; t < [tagSplit count]; t++)
-                                {
-                                    if ([[tagSplit objectAtIndex:t] rangeOfString:@"/"].location != NSNotFound)
-                                    {
-                                        img = [tagSplit objectAtIndex:t];
-                                        break;
-                                    }
-                                }
+                                [self deepAnalyzer:file :[_components objectAtIndex:c] :[_components objectAtIndex:c-1] :[_components objectAtIndex:c-2] :_level];
                             }
-                            @catch (NSException *exception)
+                            @catch (NSException* ex)
                             {
-                                return;
                             }
-                        }
-                    }
-                }
-                if (link)
-                {
-                    img = [self pathTagCleanup:img];
-                    
-                    [self Debug:[NSString stringWithFormat:@"\tHidden File: %@",img]];
-                    //http://localhost/skins/images/wysiwyg/core/themes/base/
-                    
-                    [[NSFileManager defaultManager] createDirectoryAtPath:[[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],img] stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
-                    
-                    //TODO: Finish this part
-                }
-            }
-        }
-        else if([[fileRoot pathExtension] isEqualToString:@"json"] || [[fileRoot pathExtension] isEqualToString:@"z"])
-        {
-            split = [webfile componentsSeparatedByString: @","];
-            NSArray* jsonExtentions = [NSArray arrayWithObjects:@"\"url\":", @"\"uri\":", @"\"componentType\":", nil];
-            NSString* img = @"";
-            NSString* resources_url = @"";
-            
-            for(int u = 0; u < [split count]; u++)
-            {
-                BOOL link = FALSE;
-                for(int i = 0; i < [jsonExtentions count]; i++)
-                {
-                    if ([[split objectAtIndex:u] rangeOfString:@"\"resources\":"].location != NSNotFound)
-                    {
-                        resources_url = [NSString stringWithFormat:@"%@/",[self pathTagCleanup:img]];
-                    }
-                    
-                    if ([[split objectAtIndex:u] rangeOfString:[jsonExtentions objectAtIndex:i]].location != NSNotFound)
-                    {
-                        //Ahh this is tricky Ajax stuff ...if there is a { infront it means there is an extra "previous" incapsulation to the url path!
-                        if ([[split objectAtIndex:u] rangeOfString:[NSString stringWithFormat:@"{%@",[jsonExtentions objectAtIndex:i]]].location != NSNotFound)
-                        {
-                            img = [NSString stringWithFormat:@"%@/%@",resources_url,[[split objectAtIndex:u] stringByReplacingOccurrencesOfString:[jsonExtentions objectAtIndex:i] withString:@""]];
-                        }
-                        else
-                        {
-                            img = [[split objectAtIndex:u] stringByReplacingOccurrencesOfString:[jsonExtentions objectAtIndex:i] withString:@""];
-                        }
-                        
-                        img = [img stringByReplacingOccurrencesOfString:@"\"resources\":" withString:@""];
-                        
-                        link = TRUE;
-                        break;
-                    }
-                }
-                
-                if (link)
-                {
-                    img = [self pathTagCleanup:img];
-                    
-                    if ([img rangeOfString:@"/"].location == NSNotFound && [img rangeOfString:@"."].location != NSNotFound && ![[img pathExtension] isEqualToString:@"js"])
-                    {
-                        // Another tricky Ajax
-                        // This is most likely "componentType:" and it is linked to a hidden .js file
-                        // We want to avoid downloading everything from "/services/skins" so this is why it is filtered in here.
-                        // All references are located in "/services/skins/2.648.0/viewerSkinData.min.js"
-                        
-                        // Example:
-                        // wysiwyg.viewer.skins.VideoSkin > http://static.parastorage.com/services/skins/services/skins/2.648.0/javascript/wysiwyg/viewer/skins/VideoSkin.js
-                        // wysiwyg.viewer.components.WPhoto > http://static.parastorage.com/services/web/2.648.0/javascript/wysiwyg/viewer/components/WPhoto.js
-                        
-                        //TODO: finish this
-                        
-                        img = [img stringByReplacingOccurrencesOfString:@"." withString:@"/"];
-                        
-                        [self Debug:[NSString stringWithFormat:@"\tSkin File: %@.js",img]];
-                        
-                        if ([img rangeOfString:@"skin" options:NSCaseInsensitiveSearch].location != NSNotFound)
-                        {
-                            [self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@.js",skinURL,img] :[NSString stringWithFormat:@"%@.js",[img lastPathComponent]]];
-                        }
-                        else if ([img rangeOfString:@"viewer/components"].location != NSNotFound)
-                        {
-                            [self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@.js",webURL,img] :[NSString stringWithFormat:@"%@.js",[img lastPathComponent]]];
-                        }
-                        else if ([img rangeOfString:@"core/components"].location != NSNotFound)
-                        {
-                            img = [img stringByReplacingOccurrencesOfString:@"mobile/" withString:@""]; // ..looks like "mobile" is being ignored in path
-                            [self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@.js",coreURL,img] :[NSString stringWithFormat:@"%@.js",[img lastPathComponent]]];
                         }
                     }
                     else
                     {
-                        [self Debug:[NSString stringWithFormat:@"\tHidden File: %@",img]];
-                        
-                        if([binExtentions containsObject:[img pathExtension]] && [media state] == NSOnState) //binary files, no analisys needed
+                        @try //Required
                         {
-                            [self Debug:[NSString stringWithFormat:@"\tDownloading Media File: %@", img]];
-                            
-                            img = [NSString stringWithFormat:@"%@/%@",mediaURL,img];
-                            
-                            webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:img]];
-                            
-                            [[NSFileManager defaultManager] createDirectoryAtPath:[[NSString stringWithFormat:@"%@/%@",DownloadPath,[self pathFromURL:img]] stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
-                            
-                            if ([webBinary writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],img] atomically:YES])
-                            {
-                                //TODO: wix has a dynamic image by size, make php to emulate the same
-                                if ([php state] == NSOnState)
-                                {
-                                    
-                                }
-                            }
+                            [self deepAnalyzer:file :[components objectAtIndex:i] :[components objectAtIndex:i-1] :[components objectAtIndex:i-2] :_level];
                         }
-                        else if([txtExtentions containsObject:[img pathExtension]]) //binary files, no analisys needed
+                        @catch (NSException* ex)
                         {
-                            [self fileAnalyzer:[NSString stringWithFormat:@"%@/%@",[file stringByDeletingLastPathComponent],img] :[img lastPathComponent]];
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+-(void)deepAnalyzer:(NSString*)file :(NSString*)_url :(NSString*)arg1 :(NSString*)arg2 :(int)_level
+{
+    _url = [self pathTagCleanup:_url];
+    arg1 = [self pathTagCleanup:arg1];
+    arg2 = [self pathTagCleanup:arg2];
+ 
+    NSArray* jsExtentions = [NSArray arrayWithObjects: @"url", @"uri",  @"background-imageurl", @"backgroundurl", @"iconUrl", nil];
+    
+    if ([_url rangeOfString:@"."].location != NSNotFound && [_url rangeOfString:@" "].location == NSNotFound && [_url rangeOfString:@"\n"].location == NSNotFound)
+    {
+        if(![binExtentions containsObject:[_url pathExtension]] && ![txtExtentions containsObject:[_url pathExtension]] && [[_url pathExtension] length] > 3)
+        {
+            //Take care of brackets
+            if ([_url rangeOfString:@"("].location != NSNotFound && [_url rangeOfString:@")"].location != NSNotFound)
+            {
+                NSArray* bktRight = [_url componentsSeparatedByString: @"("];
+                NSArray* bktLeft = [[bktRight objectAtIndex:0] componentsSeparatedByString: @"("];
+                _url = [bktLeft objectAtIndex:[bktLeft count]-1];
+            }
+            
+            _url = [_url stringByReplacingOccurrencesOfString:@"." withString:@"/"];
+            
+            [self Debug:[NSString stringWithFormat:@"\tHidden JavaScript: %@.js",_url]];
+            
+            // Example:
+            // wysiwyg.viewer.skins.VideoSkin > http://static.parastorage.com/services/skins/services/skins/2.648.0/javascript/wysiwyg/viewer/skins/VideoSkin.js
+            // wysiwyg.viewer.components.WPhoto > http://static.parastorage.com/services/web/2.648.0/javascript/wysiwyg/viewer/components/WPhoto.js
+            
+            NSString* url =[file stringByDeletingLastPathComponent];
+            
+            //same directory
+            //[self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@.js",url ,_url] :[NSString stringWithFormat:@"%@.js",[_url lastPathComponent]]];
+            
+            //other logical places (no worries duplicates will be ignored)
+            if ([_url rangeOfString:@"/skin" options:NSCaseInsensitiveSearch].location != NSNotFound)
+            {
+                url = skinURL;
+            }
+            else if ([_url rangeOfString:@"/core"].location != NSNotFound)
+            {
+                _url = [_url stringByReplacingOccurrencesOfString:@"mobile/" withString:@""]; // ..looks like "mobile" is being ignored in path
+                url =  coreURL;
+            }
+            else if ([_url rangeOfString:@"/components"].location != NSNotFound)
+            {
+                url = webURL;
+            }
+            
+            [self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@.js",url ,_url] :[NSString stringWithFormat:@"%@.js",[_url lastPathComponent]] :_level+1];
+        }
+        else
+        {
+            if([jsExtentions containsObject:arg1] || [jsExtentions containsObject:arg2])
+            {
+                if(([binExtentions containsObject:[_url pathExtension]] && [media state] == NSOnState) || ([_url rangeOfString:@"viewerSkinData.min.js"].location != NSNotFound)) //binary files, no analisys needed
+                {
+                    //TODO: replace [] with meaninfull urls
+                    
+                    [self Debug:[NSString stringWithFormat:@"\tHidden Media: %@", _url]];
+                    
+                    _url = [NSString stringWithFormat:@"%@/%@",mediaURL,_url];
+                    
+                    NSData* webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:_url]];
+                    
+                    [[NSFileManager defaultManager] createDirectoryAtPath:[[NSString stringWithFormat:@"%@/%@",DownloadPath,[self pathFromURL:_url]] stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
+                    
+                    if ([webBinary writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],_url] atomically:YES])
+                    {
+                        //TODO: wix has a dynamic image by size, make php to emulate the same
+                        if ([php state] == NSOnState)
+                        {
+                            
+                        }
+                    }
+                }
+                else if([txtExtentions containsObject:[_url pathExtension]])
+                {
+                    [self Debug:[NSString stringWithFormat:@"\tHidden File: %@.js",_url]];
+                    
+                    [self fileAnalyzer:[NSString stringWithFormat:@"%@/%@",[file stringByDeletingLastPathComponent],_url] :[_url lastPathComponent] :_level+1];
                 }
             }
         }
@@ -527,6 +500,7 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
     path = [path stringByReplacingOccurrencesOfString:@"}" withString:@""];
     path = [path stringByReplacingOccurrencesOfString:@":" withString:@""];
     path = [path stringByReplacingOccurrencesOfString:@"\"" withString:@""];
+    path = [path stringByReplacingOccurrencesOfString:@"'" withString:@""];
     return path;
 }
 

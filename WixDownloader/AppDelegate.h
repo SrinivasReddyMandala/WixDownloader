@@ -5,6 +5,7 @@
     IBOutlet NSTextField* site;
     IBOutlet NSTextField* domain;
     IBOutlet NSButton* download;
+    IBOutlet NSTextField* level;
     IBOutlet NSButton* media;
     IBOutlet NSButton* editor;
     IBOutlet NSButton* php;
