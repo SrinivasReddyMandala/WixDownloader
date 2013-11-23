@@ -9,12 +9,17 @@ NSArray* http;
 NSArray* allowedDomains;
 NSArray* binExtentions;
 NSArray* txtExtentions;
+NSArray* jsExtentions;
+
+NSArray* wixExtentions;
 NSArray* wixTags;
 NSArray* wixTagsURL;
 NSString* skinURL = @"http://static.parastorage.com/services/skins/2.648.0";
 NSString* webURL = @"http://static.parastorage.com/services/web/2.648.0";
 NSString* coreURL = @"http://static.parastorage.com/services/core/2.648.0";
 NSString* mediaURL = @"http://static.wixstatic.com/media";
+
+NSTask* HTTPServer;
 
 - (id) init
 {
@@ -24,6 +29,7 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
 
 - (void)windowWillClose:(NSNotification *)notification
 {
+    [HTTPServer terminate];
     [NSApp terminate:self];
 }
 
@@ -98,15 +104,18 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
     wixTagsURL = [NSArray arrayWithObjects: @"/", @"/", @"/", @"/", @"/", @"/", nil];
     
     //TODO: Wireshark these out ...find the URLS
-    
     //[tdr],[baseThemeDir]      =   BASE_THEME_DIRECTORY
     //[themeDir]                =   THEME_DIRECTORY
     //[webThemeDir]             =   WEB_THEME_DIRECTORY
+    
+    wixExtentions = [NSArray arrayWithObjects: @"wysiwyg", @"skins", @"core", @"web", nil];
     //==================================
     
     http = [NSArray arrayWithObjects: @"http://", @"https://", nil];
-    binExtentions = [NSArray arrayWithObjects: @"ico", @"png", @"jpg", @"jpeg", @"gif", @"mp3", @"wix_mp", @"swf", @"html", @"htm", nil]; //wix_mp looks like png format
+    binExtentions = [NSArray arrayWithObjects: @"ico", @"png", @"jpg", @"jpeg", @"gif", @"mp3", @"wix_mp", @"swf", @"html", @"htm", nil]; //wix_mp = png
     txtExtentions = [NSArray arrayWithObjects: @"js", @"json", @"z", @"css", nil];
+    jsExtentions = [NSArray arrayWithObjects: @"url", @"uri",  @"background-image:url", @"background:url", @"iconUrl", nil];
+    
     DownloadPath = [NSString stringWithFormat:@"%@/Downloads/%@",NSHomeDirectory(),[[domain stringValue] stringByReplacingOccurrencesOfString:@"http://" withString:@""]];
     
     NSString *indexHTML = [self downloadFile:[site stringValue]];
@@ -165,7 +174,7 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
                 // hidden in directories, make sure we don't miss them
                 if ([dirRoot rangeOfString:@"?"].location == NSNotFound && [[dirRoot pathExtension] length] < 3)
                 {
-                    [self fileAnalyzer:[NSString stringWithFormat:@"http://%@/%@index.json",[domainRoot objectAtIndex:0],dirRoot] :@"index.json" :0];
+                    [self fileAnalyzer:[NSString stringWithFormat:@"http://%@/%@index.json",[domainRoot objectAtIndex:0],dirRoot] :@"index.json" :1];
                 }
                 //=========== index.json ============
             }
@@ -196,7 +205,7 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
             }
             else
             {
-                [self fileAnalyzer:fileDownload :fileRoot :0];
+                [self fileAnalyzer:fileDownload :fileRoot :1];
             }
             
             BOOL replace = YES;
@@ -226,7 +235,13 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
             
             if(replace == YES)
             {
-                //[self Debug:[NSString stringWithFormat:@"Replace %@ > %@", fileDownload,[NSString stringWithFormat:@"%@/%@/%@",[domain stringValue],dirRoot,fileRoot]]];
+                if(![binExtentions containsObject:[fileRoot pathExtension]] && ![txtExtentions containsObject:[fileRoot pathExtension]])
+                {
+                    fileRoot = @"";
+                }
+                
+                 //[self Debug:[NSString stringWithFormat:@"Replace %@ > %@", fileDownload,[NSString stringWithFormat:@"%@/%@/%@",[domain stringValue],dirRoot,fileRoot]]];
+                
                 indexHTML = [indexHTML stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"\"%@\"",fileDownload] withString:[self http_correctURL:[NSString stringWithFormat:@"\"%@/%@/%@\"",[domain stringValue],dirRoot,fileRoot]]];
             }
         }
@@ -284,7 +299,7 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
         {
             [self Debug:@"Starting HTTPServer ..."];
             
-            NSTask* HTTPServer = [[NSTask alloc] init];
+            HTTPServer = [[NSTask alloc] init];
             NSPipe* pipe = [NSPipe pipe];
             NSFileHandle* file = [pipe fileHandleForReading];
             
@@ -338,7 +353,7 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
     
     NSString* webfile = [self downloadFile:file];
     
-    [self Debug:[NSString stringWithFormat:@"> File Analyzer: (%ld) %@", [webfile length], file]];
+    [self Debug:[NSString stringWithFormat:@"> File Analyzer: (%ld) %@ [%d]", [webfile length], file, _level]];
     
     if(webfile != NULL)
     {
@@ -349,7 +364,7 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
         [webfile writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],fileRoot] atomically:YES encoding:NSUTF8StringEncoding error:nil];
         
         NSArray *split;
-        if(([[fileRoot pathExtension] isEqualToString:@"js"] || [[fileRoot pathExtension] isEqualToString:@"json"] || [[fileRoot pathExtension] isEqualToString:@"z"]) && _level <= [[level stringValue] integerValue])
+        if(([[fileRoot pathExtension] isEqualToString:@"js"] || [[fileRoot pathExtension] isEqualToString:@"json"] || [[fileRoot pathExtension] isEqualToString:@"z"]) && _level <= [[level stringValue] intValue])
         {
             if ([webfile rangeOfString:@","].location != NSNotFound)
             {
@@ -411,12 +426,11 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
     _url = [self pathTagCleanup:_url];
     arg1 = [self pathTagCleanup:arg1];
     arg2 = [self pathTagCleanup:arg2];
- 
-    NSArray* jsExtentions = [NSArray arrayWithObjects: @"url", @"uri",  @"background-imageurl", @"backgroundurl", @"iconUrl", nil];
     
     if ([_url rangeOfString:@"."].location != NSNotFound && [_url rangeOfString:@" "].location == NSNotFound && [_url rangeOfString:@"\n"].location == NSNotFound)
     {
-        if(![binExtentions containsObject:[_url pathExtension]] && ![txtExtentions containsObject:[_url pathExtension]] && [[_url pathExtension] length] > 3)
+        NSArray* parts = [_url componentsSeparatedByString: @"."];
+        if([wixExtentions containsObject:[parts objectAtIndex:0]])
         {
             //Take care of brackets
             if ([_url rangeOfString:@"("].location != NSNotFound && [_url rangeOfString:@")"].location != NSNotFound)
@@ -435,6 +449,7 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
             // wysiwyg.viewer.components.WPhoto > http://static.parastorage.com/services/web/2.648.0/javascript/wysiwyg/viewer/components/WPhoto.js
             
             NSString* url =[file stringByDeletingLastPathComponent];
+            NSString* ext = @".js";
             
             //same directory
             //[self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@.js",url ,_url] :[NSString stringWithFormat:@"%@.js",[_url lastPathComponent]]];
@@ -454,13 +469,13 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
                 url = webURL;
             }
             
-            [self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@.js",url ,_url] :[NSString stringWithFormat:@"%@.js",[_url lastPathComponent]] :_level+1];
+            [self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@%@",url ,_url,ext] :[NSString stringWithFormat:@"%@%@",[_url lastPathComponent],ext] :_level+1];
         }
         else
         {
             if([jsExtentions containsObject:arg1] || [jsExtentions containsObject:arg2])
             {
-                if(([binExtentions containsObject:[_url pathExtension]] && [media state] == NSOnState) || ([_url rangeOfString:@"viewerSkinData.min.js"].location != NSNotFound)) //binary files, no analisys needed
+                if([binExtentions containsObject:[_url pathExtension]] && [media state] == NSOnState) //binary files, no analisys needed
                 {
                     //TODO: replace [] with meaninfull urls
                     
@@ -483,9 +498,11 @@ NSString* mediaURL = @"http://static.wixstatic.com/media";
                 }
                 else if([txtExtentions containsObject:[_url pathExtension]])
                 {
-                    [self Debug:[NSString stringWithFormat:@"\tHidden File: %@.js",_url]];
+                    [self Debug:[NSString stringWithFormat:@"\tHidden File: %@",_url]];
                     
                     [self fileAnalyzer:[NSString stringWithFormat:@"%@/%@",[file stringByDeletingLastPathComponent],_url] :[_url lastPathComponent] :_level+1];
+               
+                    [self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@",[file stringByDeletingLastPathComponent],_url] :[_url lastPathComponent] :_level+1];
                 }
             }
         }
