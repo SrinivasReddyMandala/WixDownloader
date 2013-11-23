@@ -280,8 +280,8 @@ NSTask* HTTPServer;
     system([[NSString stringWithFormat:@"rm -r %@/plebs",DownloadPath] UTF8String]);
     system([[NSString stringWithFormat:@"rm -r %@/portal",DownloadPath] UTF8String]);
     system([[NSString stringWithFormat:@"rm -r %@/integrations",DownloadPath] UTF8String]);
-    system([[NSString stringWithFormat:@"rm -r %@/wix-html-editor-pages-webapp",DownloadPath] UTF8String]);
-    system([[NSString stringWithFormat:@"rm -r %@/wix-public-html-renderer",DownloadPath] UTF8String]);
+    //system([[NSString stringWithFormat:@"rm -r %@/wix-html-editor-pages-webapp",DownloadPath] UTF8String]);
+    //system([[NSString stringWithFormat:@"rm -r %@/wix-public-html-renderer",DownloadPath] UTF8String]);
     
     [self Debug:@"Downloading Finished"];
     [download setTitle:@"Download"];
@@ -289,6 +289,7 @@ NSTask* HTTPServer;
     [loading setHidden:TRUE];
     [progress stopAnimation: self];
     
+    [[NSWorkspace sharedWorkspace] activateFileViewerSelectingURLs:@[[NSURL fileURLWithPath:DownloadPath]]];
     
     // TODO: Looks like some "skin" graphics files are hidden deep inside java
     // do a server sweep and look for 404 requests on live Safari view.
@@ -502,7 +503,7 @@ NSTask* HTTPServer;
                     
                     [self fileAnalyzer:[NSString stringWithFormat:@"%@/%@",[file stringByDeletingLastPathComponent],_url] :[_url lastPathComponent] :_level+1];
                
-                    [self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@",[file stringByDeletingLastPathComponent],_url] :[_url lastPathComponent] :_level+1];
+                    //[self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@",[file stringByDeletingLastPathComponent],_url] :[_url lastPathComponent] :_level+1];
                 }
             }
         }

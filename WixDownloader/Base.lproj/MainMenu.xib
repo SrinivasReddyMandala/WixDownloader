@@ -122,7 +122,7 @@
                     <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="9AZ-TB-X5o">
                         <rect key="frame" x="250" y="156" width="127" height="18"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <buttonCell key="cell" type="check" title="Download Media" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="iPf-8B-gOf">
+                        <buttonCell key="cell" type="check" title="Download Media" bezelStyle="regularSquare" imagePosition="left" inset="2" id="iPf-8B-gOf">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
@@ -138,7 +138,7 @@
                     <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Te7-Vg-EAt">
                         <rect key="frame" x="250" y="84" width="137" height="18"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <buttonCell key="cell" type="check" title="My Server has PHP" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="jAi-wZ-y5P">
+                        <buttonCell key="cell" type="check" title="My Server has PHP" bezelStyle="regularSquare" imagePosition="left" inset="2" id="jAi-wZ-y5P">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
