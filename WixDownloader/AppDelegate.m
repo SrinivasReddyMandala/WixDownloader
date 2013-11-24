@@ -14,10 +14,10 @@ NSArray* jsExtentions;
 NSArray* wixExtentions;
 NSArray* wixTags;
 NSArray* wixTagsURL;
-NSString* skinURL = @"http://static.parastorage.com/services/skins/2.648.0";
-NSString* webURL = @"http://static.parastorage.com/services/web/2.648.0";
-NSString* coreURL = @"http://static.parastorage.com/services/core/2.648.0";
-NSString* mediaURL = @"http://static.wixstatic.com/media";
+NSString* skinURL;
+NSString* webURL;
+NSString* coreURL;
+NSString* mediaURL;
 
 NSTask* HTTPServer;
 
@@ -100,15 +100,7 @@ NSTask* HTTPServer;
     
     //==== Propriotery to wix.com ======
     allowedDomains = [NSArray arrayWithObjects: @"wix.com", @"parastorage.com", @"wixstatic.com", @"wixpress.com", [site stringValue], nil];
-    wixTags = [NSArray arrayWithObjects: @"[tdr]",@"[baseThemeDir]" @"[webThemeDir]", @"[themeDir]", @"[ulc]", @"SKIN_ICON_PATH+", nil];
-    wixTagsURL = [NSArray arrayWithObjects: @"/", @"/", @"/", @"/", @"/", @"/", nil];
-    
-    //TODO: Wireshark these out ...find the URLS
-    //[tdr],[baseThemeDir]      =   BASE_THEME_DIRECTORY
-    //[themeDir]                =   THEME_DIRECTORY
-    //[webThemeDir]             =   WEB_THEME_DIRECTORY
-    
-    wixExtentions = [NSArray arrayWithObjects: @"wysiwyg", @"skins", @"core", @"web", nil];
+    wixExtentions = [NSArray arrayWithObjects: @"wysiwyg", @"skins", @"core", @"web", @"wixapps", nil];
     //==================================
     
     http = [NSArray arrayWithObjects: @"http://", @"https://", nil];
@@ -133,8 +125,8 @@ NSTask* HTTPServer;
     NSArray *jsonHTTP = [indexHTML componentsSeparatedByString: @"\""];
     [progress setMaxValue:[jsonHTTP count]];
     
-    //Get static URLs dynamically
-    for(int i = 0; i < [jsonHTTP count]; i++)
+    //==== Propriotery to wix.com ======
+    for(int i = 0; i < [jsonHTTP count]; i++)  //Get static URLs dynamically
     {
         if ([[jsonHTTP objectAtIndex:i] isEqualToString:@"skins"])
         {
@@ -154,6 +146,17 @@ NSTask* HTTPServer;
         }
     }
     
+    wixTags = [NSArray arrayWithObjects: @"[tdr]",@"[baseThemeDir]" @"[webThemeDir]", @"[themeDir]", @"[ulc]", @"SKIN_ICON_PATH+", nil];
+    wixTagsURL = [NSArray arrayWithObjects:[NSString stringWithFormat:@"%@/images/wysiwyg/core/themes/base/",skinURL], [NSString stringWithFormat:@"%@/images/wysiwyg/core/themes/base/",skinURL], @"/", @"/", @"/", @"/", nil];
+    
+    //http://static.parastorage.com/services/skins/2.648.1/images/wysiwyg/core/themes/base/shadowbottom.png
+    //TODO: Wireshark these out ...find the URLS
+    //[tdr],[baseThemeDir]      =   BASE_THEME_DIRECTORY
+    //[themeDir]                =   THEME_DIRECTORY
+    //[webThemeDir]             =   WEB_THEME_DIRECTORY
+    //==================================
+    
+    
     for(int i = 0; i < [jsonHTTP count]; i++)
     {
         if ([[jsonHTTP objectAtIndex:i] rangeOfString:@"http://"].location != NSNotFound)
@@ -166,22 +169,27 @@ NSTask* HTTPServer;
             NSString* fileDownload = [jsonHTTP objectAtIndex:i];
             NSArray* domainRoot = [[fileDownload stringByReplacingOccurrencesOfString:@"http://" withString:@""] componentsSeparatedByString: @"/"];
             
-            for(int d = 1; d < [domainRoot count]; d++) //we only need first and last
-            {
-                dirRoot = [dirRoot stringByAppendingString:[NSString stringWithFormat:@"%@/",[domainRoot objectAtIndex:d]]];
-                //=========== index.json ============
-                // This is tricky to detect, but wix has many index.json
-                // hidden in directories, make sure we don't miss them
-                if ([dirRoot rangeOfString:@"?"].location == NSNotFound && [[dirRoot pathExtension] length] < 3)
-                {
-                    [self fileAnalyzer:[NSString stringWithFormat:@"http://%@/%@index.json",[domainRoot objectAtIndex:0],dirRoot] :@"index.json" :1];
-                }
-                //=========== index.json ============
-            }
+            /*
+             for(int d = 1; d < [domainRoot count]; d++) //we only need first and last
+             {
+             dirRoot = [dirRoot stringByAppendingString:[NSString stringWithFormat:@"%@/",[domainRoot objectAtIndex:d]]];
+             //=========== index.json ============
+             // This is tricky to detect, but wix has many index.json
+             // hidden in directories, make sure we don't miss them
+             if ([dirRoot rangeOfString:@"?"].location == NSNotFound && [[dirRoot pathExtension] length] < 3)
+             {
+             [self fileAnalyzer:[NSString stringWithFormat:@"http://%@/%@index.json",[domainRoot objectAtIndex:0],dirRoot] :@"index.json" :1];
+             }
+             //=========== index.json ============
+             }
+             */
             
             dirRoot = [self pathFromURL:fileDownload];
             
+            [self fileAnalyzer:[NSString stringWithFormat:@"http://%@/%@index.json",[domainRoot objectAtIndex:0],dirRoot] :@"index.json" :1];
+            
             [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/%@",DownloadPath,dirRoot] withIntermediateDirectories:YES attributes:nil error:&error];
+            
             
             NSString* fileRoot = [domainRoot objectAtIndex:[domainRoot count]-1];
             //Get rid of ? in the filename. This is ussually means the the file at the server is dynamic. like a PHP script but we don't care, we need static
@@ -240,7 +248,7 @@ NSTask* HTTPServer;
                     fileRoot = @"";
                 }
                 
-                 //[self Debug:[NSString stringWithFormat:@"Replace %@ > %@", fileDownload,[NSString stringWithFormat:@"%@/%@/%@",[domain stringValue],dirRoot,fileRoot]]];
+                //[self Debug:[NSString stringWithFormat:@"Replace %@ > %@", fileDownload,[NSString stringWithFormat:@"%@/%@/%@",[domain stringValue],dirRoot,fileRoot]]];
                 
                 indexHTML = [indexHTML stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"\"%@\"",fileDownload] withString:[self http_correctURL:[NSString stringWithFormat:@"\"%@/%@/%@\"",[domain stringValue],dirRoot,fileRoot]]];
             }
@@ -478,7 +486,15 @@ NSTask* HTTPServer;
             {
                 if([binExtentions containsObject:[_url pathExtension]] && [media state] == NSOnState) //binary files, no analisys needed
                 {
-                    //TODO: replace [] with meaninfull urls
+                    //Replace [] with url
+                    for(int t = 0; t < [wixTags count]; t++)
+                    {
+                        if ([_url rangeOfString:[wixTags objectAtIndex:t]].location != NSNotFound)
+                        {
+                            _url = [_url stringByReplacingOccurrencesOfString:[wixTags objectAtIndex:t] withString:[wixTagsURL objectAtIndex:t]];
+                            break;
+                        }
+                    }
                     
                     [self Debug:[NSString stringWithFormat:@"\tHidden Media: %@", _url]];
                     
@@ -502,7 +518,7 @@ NSTask* HTTPServer;
                     [self Debug:[NSString stringWithFormat:@"\tHidden File: %@",_url]];
                     
                     [self fileAnalyzer:[NSString stringWithFormat:@"%@/%@",[file stringByDeletingLastPathComponent],_url] :[_url lastPathComponent] :_level+1];
-               
+                    
                     //[self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@",[file stringByDeletingLastPathComponent],_url] :[_url lastPathComponent] :_level+1];
                 }
             }
