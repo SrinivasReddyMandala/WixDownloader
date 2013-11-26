@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="4510" systemVersion="13A603" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="4510" systemVersion="13A603" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
     <dependencies>
-        <deployment defaultVersion="1070" identifier="macosx"/>
+        <deployment defaultVersion="1060" identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="4510"/>
     </dependencies>
     <objects>
@@ -17,17 +17,17 @@
                 <rect key="frame" x="0.0" y="0.0" width="560" height="273"/>
                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                 <subviews>
-                    <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Bz4-sh-hFC">
+                    <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" id="Bz4-sh-hFC">
                         <rect key="frame" x="0.0" y="36" width="256" height="256"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyUpOrDown" image="wix" id="8M6-MX-OFb"/>
                     </imageView>
-                    <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="EZZ-57-mI6">
+                    <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" id="EZZ-57-mI6">
                         <rect key="frame" x="37" y="31" width="212" height="136"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" image="pwned" id="JcF-Ow-h2r"/>
                     </imageView>
-                    <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="kom-xy-4V1">
+                    <button verticalHuggingPriority="750" id="kom-xy-4V1">
                         <rect key="frame" x="246" y="37" width="103" height="32"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <buttonCell key="cell" type="push" title="Download" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="Aha-EX-cgO">
@@ -38,8 +38,41 @@
                             <action selector="download_Click:" target="nhg-GP-H0q" id="Jsc-DW-cWa"/>
                         </connections>
                     </button>
-                    <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="pMW-pt-1mr">
-                        <rect key="frame" x="252" y="180" width="288" height="22"/>
+                    <button verticalHuggingPriority="750" id="uPd-zb-D68">
+                        <rect key="frame" x="522" y="177" width="28" height="28"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <buttonCell key="cell" type="bevel" title="site" bezelStyle="rounded" image="tip" imagePosition="only" alignment="center" inset="2" id="fB8-KZ-AK1">
+                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                            <font key="font" metaFont="system"/>
+                        </buttonCell>
+                        <connections>
+                            <action selector="tooltip_Click:" target="nhg-GP-H0q" id="2Z1-Yz-22b"/>
+                        </connections>
+                    </button>
+                    <button verticalHuggingPriority="750" id="d1O-VW-Pow">
+                        <rect key="frame" x="522" y="105" width="28" height="28"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <buttonCell key="cell" type="bevel" title="domain" bezelStyle="rounded" image="tip" imagePosition="only" alignment="center" inset="2" id="KB8-fK-xJR">
+                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                            <font key="font" metaFont="system"/>
+                        </buttonCell>
+                        <connections>
+                            <action selector="tooltip_Click:" target="nhg-GP-H0q" id="Pl6-a3-ByQ"/>
+                        </connections>
+                    </button>
+                    <button verticalHuggingPriority="750" id="5vI-9C-bMj">
+                        <rect key="frame" x="466" y="41" width="28" height="28"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <buttonCell key="cell" type="bevel" title="level" bezelStyle="rounded" image="tip" imagePosition="only" alignment="center" inset="2" id="AmA-Cp-LUR">
+                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                            <font key="font" metaFont="system"/>
+                        </buttonCell>
+                        <connections>
+                            <action selector="tooltip_Click:" target="nhg-GP-H0q" id="vHr-o6-4bt"/>
+                        </connections>
+                    </button>
+                    <textField verticalHuggingPriority="750" id="pMW-pt-1mr">
+                        <rect key="frame" x="252" y="180" width="269" height="22"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" title="http://" drawsBackground="YES" id="zbG-fb-S5c">
                             <font key="font" metaFont="system"/>
@@ -47,7 +80,7 @@
                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="HRm-Sn-J65">
+                    <textField verticalHuggingPriority="750" id="HRm-Sn-J65">
                         <rect key="frame" x="412" y="44" width="52" height="22"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" title="1" drawsBackground="YES" id="UDJ-qM-ZGD">
@@ -56,7 +89,7 @@
                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="eA7-4h-TQJ">
+                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="eA7-4h-TQJ">
                         <rect key="frame" x="250" y="236" width="228" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Unofficial Wix.com Site Downloader" id="b2s-cI-DKq">
@@ -65,7 +98,7 @@
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="d2O-dx-qwQ">
+                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="d2O-dx-qwQ">
                         <rect key="frame" x="250" y="205" width="114" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Wix.com Website:" id="WPk-HB-84d">
@@ -74,7 +107,7 @@
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="F0s-sp-vRY">
+                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="F0s-sp-vRY">
                         <rect key="frame" x="363" y="46" width="40" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Level:" id="LLU-xg-fSL">
@@ -83,7 +116,7 @@
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="DHS-Pk-hav">
+                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="DHS-Pk-hav">
                         <rect key="frame" x="250" y="133" width="123" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Your Own Domain:" id="pIh-mO-Ql0">
@@ -92,8 +125,8 @@
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="GY1-Af-JdE">
-                        <rect key="frame" x="252" y="108" width="288" height="22"/>
+                    <textField verticalHuggingPriority="750" id="GY1-Af-JdE">
+                        <rect key="frame" x="252" y="108" width="269" height="22"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" title="http://" drawsBackground="YES" id="Vhb-Tx-eWA">
                             <font key="font" metaFont="system"/>
@@ -101,53 +134,62 @@
                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <box autoresizesSubviews="NO" verticalHuggingPriority="750" fixedFrame="YES" title="Box" boxType="separator" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="vnm-sr-vSJ">
+                    <box autoresizesSubviews="NO" verticalHuggingPriority="750" title="Box" boxType="separator" titlePosition="noTitle" id="vnm-sr-vSJ">
                         <rect key="frame" x="252" y="225" width="288" height="5"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <color key="borderColor" white="0.0" alpha="0.41999999999999998" colorSpace="calibratedWhite"/>
                         <color key="fillColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                         <font key="titleFont" metaFont="system"/>
                     </box>
-                    <box autoresizesSubviews="NO" verticalHuggingPriority="750" fixedFrame="YES" title="Box" boxType="separator" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="48h-OD-mDr">
+                    <box autoresizesSubviews="NO" verticalHuggingPriority="750" title="Box" boxType="separator" titlePosition="noTitle" id="48h-OD-mDr">
                         <rect key="frame" x="252" y="72" width="288" height="5"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <color key="borderColor" white="0.0" alpha="0.41999999999999998" colorSpace="calibratedWhite"/>
                         <color key="fillColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                         <font key="titleFont" metaFont="system"/>
                     </box>
-                    <progressIndicator hidden="YES" horizontalHuggingPriority="750" verticalHuggingPriority="750" fixedFrame="YES" maxValue="100" bezeled="NO" indeterminate="YES" controlSize="small" style="spinning" translatesAutoresizingMaskIntoConstraints="NO" id="h3r-qr-l1T">
+                    <progressIndicator hidden="YES" horizontalHuggingPriority="750" verticalHuggingPriority="750" maxValue="100" bezeled="NO" indeterminate="YES" controlSize="small" style="spinning" id="h3r-qr-l1T">
                         <rect key="frame" x="524" y="17" width="16" height="16"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     </progressIndicator>
-                    <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="9AZ-TB-X5o">
+                    <button id="9AZ-TB-X5o">
                         <rect key="frame" x="250" y="156" width="127" height="18"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <buttonCell key="cell" type="check" title="Download Media" bezelStyle="regularSquare" imagePosition="left" inset="2" id="iPf-8B-gOf">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
+                        <connections>
+                            <action selector="tooltip_Click:" target="nhg-GP-H0q" id="82S-WE-2Vb"/>
+                        </connections>
                     </button>
-                    <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="PHa-n8-CJk">
+                    <button id="PHa-n8-CJk">
                         <rect key="frame" x="399" y="156" width="127" height="18"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <buttonCell key="cell" type="check" title="Download Editor" bezelStyle="regularSquare" imagePosition="left" inset="2" id="dRG-Cd-cRU">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
+                        <connections>
+                            <action selector="tooltip_Click:" target="nhg-GP-H0q" id="pKu-Ec-MQZ"/>
+                        </connections>
                     </button>
-                    <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Te7-Vg-EAt">
+                    <button id="Te7-Vg-EAt">
                         <rect key="frame" x="250" y="84" width="137" height="18"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <buttonCell key="cell" type="check" title="My Server has PHP" bezelStyle="regularSquare" imagePosition="left" inset="2" id="jAi-wZ-y5P">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
+                        <connections>
+                            <action selector="tooltip_Click:" target="nhg-GP-H0q" id="Ejv-lf-XDH"/>
+                        </connections>
                     </button>
-                    <progressIndicator fixedFrame="YES" maxValue="100" indeterminate="YES" style="bar" translatesAutoresizingMaskIntoConstraints="NO" id="Rhr-OJ-NhG">
+                    <progressIndicator maxValue="100" indeterminate="YES" style="bar" id="Rhr-OJ-NhG">
                         <rect key="frame" x="252" y="15" width="212" height="20"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     </progressIndicator>
-                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="E7k-97-1W4">
+                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="E7k-97-1W4">
                         <rect key="frame" x="475" y="17" width="48" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="%" id="cAR-mo-jgQ">
@@ -176,7 +218,8 @@
         </customObject>
     </objects>
     <resources>
-        <image name="pwned" width="400" height="299"/>
+        <image name="pwned" width="200" height="150"/>
+        <image name="tip" width="16" height="16"/>
         <image name="wix" width="256" height="256"/>
     </resources>
 </document>

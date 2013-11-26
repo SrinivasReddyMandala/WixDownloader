@@ -10,7 +10,6 @@ NSArray* allowedDomains;
 NSArray* binExtentions;
 NSArray* txtExtentions;
 NSArray* jsExtentions;
-
 NSArray* wixExtentions;
 NSArray* wixTags;
 NSArray* wixTagsURL;
@@ -18,7 +17,6 @@ NSString* skinURL;
 NSString* webURL;
 NSString* coreURL;
 NSString* mediaURL;
-
 NSTask* HTTPServer;
 
 - (id) init
@@ -468,12 +466,12 @@ NSTask* HTTPServer;
             {
                 url = skinURL;
             }
-            else if ([_url rangeOfString:@"/core"].location != NSNotFound)
+            else if ([_url rangeOfString:@"/core" options:NSCaseInsensitiveSearch].location != NSNotFound)
             {
                 _url = [_url stringByReplacingOccurrencesOfString:@"mobile/" withString:@""]; // ..looks like "mobile" is being ignored in path
                 url =  coreURL;
             }
-            else if ([_url rangeOfString:@"/components"].location != NSNotFound)
+            else if ([_url rangeOfString:@"/components" options:NSCaseInsensitiveSearch].location != NSNotFound)
             {
                 url = webURL;
             }
@@ -484,32 +482,42 @@ NSTask* HTTPServer;
         {
             if([jsExtentions containsObject:arg1] || [jsExtentions containsObject:arg2])
             {
-                if([binExtentions containsObject:[_url pathExtension]] && [media state] == NSOnState) //binary files, no analisys needed
+                if([binExtentions containsObject:[_url pathExtension]]) //binary files, no analisys needed
                 {
-                    //Replace [] with url
-                    for(int t = 0; t < [wixTags count]; t++)
+                    BOOL DLmedia = TRUE; //download skin images but not galleries.
+                    
+                    if ([_url rangeOfString:@"/media" options:NSCaseInsensitiveSearch].location != NSNotFound && [media state] != NSOnState)
                     {
-                        if ([_url rangeOfString:[wixTags objectAtIndex:t]].location != NSNotFound)
-                        {
-                            _url = [_url stringByReplacingOccurrencesOfString:[wixTags objectAtIndex:t] withString:[wixTagsURL objectAtIndex:t]];
-                            break;
-                        }
+                        DLmedia = FALSE;
                     }
                     
-                    [self Debug:[NSString stringWithFormat:@"\tHidden Media: %@", _url]];
-                    
-                    _url = [NSString stringWithFormat:@"%@/%@",mediaURL,_url];
-                    
-                    NSData* webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:_url]];
-                    
-                    [[NSFileManager defaultManager] createDirectoryAtPath:[[NSString stringWithFormat:@"%@/%@",DownloadPath,[self pathFromURL:_url]] stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
-                    
-                    if ([webBinary writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],_url] atomically:YES])
+                    if(DLmedia)
                     {
-                        //TODO: wix has a dynamic image by size, make php to emulate the same
-                        if ([php state] == NSOnState)
+                        //Replace [] with url
+                        for(int t = 0; t < [wixTags count]; t++)
                         {
-                            
+                            if ([_url rangeOfString:[wixTags objectAtIndex:t]].location != NSNotFound)
+                            {
+                                _url = [_url stringByReplacingOccurrencesOfString:[wixTags objectAtIndex:t] withString:[wixTagsURL objectAtIndex:t]];
+                                break;
+                            }
+                        }
+                        
+                        [self Debug:[NSString stringWithFormat:@"\tHidden Media: %@", _url]];
+                        
+                        _url = [NSString stringWithFormat:@"%@/%@",mediaURL,_url];
+                        
+                        NSData* webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:_url]];
+                        
+                        [[NSFileManager defaultManager] createDirectoryAtPath:[[NSString stringWithFormat:@"%@/%@",DownloadPath,[self pathFromURL:_url]] stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
+                        
+                        if ([webBinary writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],_url] atomically:YES])
+                        {
+                            //TODO: wix has a dynamic image by size, make php to emulate the same
+                            if ([php state] == NSOnState)
+                            {
+                                
+                            }
                         }
                     }
                 }
@@ -557,6 +565,77 @@ NSTask* HTTPServer;
     return buildURL;
 }
 
+- (IBAction)tooltip_Click:(NSButton*)button
+{
+    ToolTipController* tipController = [[ToolTipController alloc] init];
+    BOOL show = TRUE;
+    
+    if([[button title] isEqualToString:@"site"])
+    {
+        tipController.tip = @"Wix.com website,\nexample: http://bob51.wix.com/test";
+    }
+    else if([[button title] isEqualToString:@"domain"])
+    {
+        tipController.tip = @"Your own domain with full path,\nexample: www.coolbeans.com/joe";
+    }
+    else if([[button title] isEqualToString:@"level"])
+    {
+        tipController.tip = @"How deep '.js' files will be analyzed.\n\nWARNING: greater than 1 will retreive entire wix skin template.";
+    }
+    else if([[button title] isEqualToString:@"Download Media"])
+    {
+        if ([media state] == NSOnState)
+        {
+            tipController.tip = @"WARNING: all image files will be downloaded, this may be big";
+        }
+        else
+        {
+            show = FALSE;
+        }
+    }
+    else if([[button title] isEqualToString:@"Download Editor"])
+    {
+        if ([editor state] == NSOnState)
+        {
+            tipController.tip = @"EXPERIMENTAL: Will download wix editor ajax files.";
+        }
+        else
+        {
+            show = FALSE;
+        }
+    }
+    else if([[button title] isEqualToString:@"My Server has PHP"])
+    {
+        if ([php state] == NSOnState)
+        {
+            tipController.tip = @"EXPERIMENTAL: Emulate dynamic image size with php";
+        }
+        else
+        {
+            show = FALSE;
+        }
+    }
+    
+    if(show)
+    {
+        NSPopover* help = [[NSPopover alloc] init];
+        help.contentViewController = tipController;
+        help.appearance = NSPopoverAppearanceHUD;
+        [help setAnimates:YES];
+        help.behavior = NSPopoverBehaviorTransient;
+        
+        
+        if (!help.isShown)
+        {
+            [help showRelativeToRect:[button bounds] ofView:button preferredEdge:NSMaxYEdge];
+        }
+        else
+        {
+            [help close];
+        }
+    }
+}
+
 - (IBAction)download_Click:(id)sender;
 {
     if([thread isExecuting])
@@ -571,6 +650,8 @@ NSTask* HTTPServer;
     }
     else
     {
+        //[site setStringValue:@"http://www.wix.com/website-template/view/html/853"];
+        
         [loading setHidden:FALSE];
         [loading startAnimation: self];
         

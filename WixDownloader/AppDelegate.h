@@ -1,4 +1,5 @@
 #import <Cocoa/Cocoa.h>
+#import "ToolTipController.h"
 
 @interface AppDelegate : NSWindowController <NSWindowDelegate>
 {
@@ -15,6 +16,7 @@
 }
 
 - (IBAction) download_Click:(id)sender;
+- (IBAction)tooltip_Click:(NSButton*)button;
 - (void) Debug:(NSString*)d;
 
 @end
