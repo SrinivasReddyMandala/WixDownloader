@@ -157,7 +157,7 @@ NSTask* HTTPServer;
     
     for(int i = 0; i < [jsonHTTP count]; i++)
     {
-        if ([[jsonHTTP objectAtIndex:i] rangeOfString:@"http://"].location != NSNotFound)
+        if ([[jsonHTTP objectAtIndex:i] rangeOfString:@"http://"].location != NSNotFound && [[jsonHTTP objectAtIndex:i] rangeOfString:@"\n"].location == NSNotFound) //pick only url and avoid comments
         {
             if([[NSThread currentThread] isCancelled])
                 [NSThread exit];
@@ -266,13 +266,13 @@ NSTask* HTTPServer;
     indexHTML = [indexHTML stringByReplacingOccurrencesOfString:@"\"baseDomain\":\"wix.com\"" withString:@"\"baseDomain\":\"/\""];
     //===================================
     
+    [indexHTML writeToFile:[NSString stringWithFormat:@"%@/index.html",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
+    
     if ([php state] == NSOnState)
     {
-        [indexHTML writeToFile:[NSString stringWithFormat:@"%@/index.php",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
-    }
-    else
-    {
-        [indexHTML writeToFile:[NSString stringWithFormat:@"%@/index.html",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
+        NSString *indexPHP = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/index.php",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
+        
+        [indexPHP writeToFile:[NSString stringWithFormat:@"%@/index.php",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
     }
     
     //TODO: Crawl for Ajax SEO pages
@@ -360,7 +360,7 @@ NSTask* HTTPServer;
     
     NSString* webfile = [self downloadFile:file];
     
-    [self Debug:[NSString stringWithFormat:@"> File Analyzer: (%ld) %@ [%d]", [webfile length], file, _level]];
+    [self Debug:[NSString stringWithFormat:@"> File Analyzer: (%ld) %@ [%d]", (unsigned long)[webfile length], file, _level]];
     
     if(webfile != NULL)
     {
@@ -373,57 +373,64 @@ NSTask* HTTPServer;
         NSArray *split;
         if(([[fileRoot pathExtension] isEqualToString:@"js"] || [[fileRoot pathExtension] isEqualToString:@"json"] || [[fileRoot pathExtension] isEqualToString:@"z"]) && _level <= [[level stringValue] intValue])
         {
-            if ([webfile rangeOfString:@","].location != NSNotFound)
+            @try //Just in case
             {
-                split = [webfile componentsSeparatedByString: @","];
-            }
-            else if ([webfile rangeOfString:@";"].location != NSNotFound)
-            {
-                split = [webfile componentsSeparatedByString: @";"];
-            }
-            
-            for(int u = 0; u < [split count]; u++)
-            {
-                //==================
-                NSArray* components;
-                if ([[split objectAtIndex:u] rangeOfString:@"\""].location != NSNotFound)
+                if ([webfile rangeOfString:@","].location != NSNotFound)
                 {
-                    components = [[split objectAtIndex:u] componentsSeparatedByString: @"\""];
+                    split = [webfile componentsSeparatedByString: @","];
                 }
-                else if ([[split objectAtIndex:u] rangeOfString:@"("].location != NSNotFound)
+                else if ([webfile rangeOfString:@";"].location != NSNotFound)
                 {
-                    components = [[split objectAtIndex:u] componentsSeparatedByString: @"("];
+                    split = [webfile componentsSeparatedByString: @";"];
                 }
-                //==================
                 
-                for(int i = 0; i < [components count]; i++)
+                for(int u = 0; u < [split count]; u++)
                 {
-                    if ([[components objectAtIndex:i] rangeOfString:@";"].location != NSNotFound)
+                    //==================
+                    NSArray* components;
+                    if ([[split objectAtIndex:u] rangeOfString:@"\""].location != NSNotFound)
                     {
-                        NSArray* _components = [[split objectAtIndex:u] componentsSeparatedByString: @";"];
-                        for(int c = 0; c < [_components count]; c++)
+                        components = [[split objectAtIndex:u] componentsSeparatedByString: @"\""];
+                    }
+                    else if ([[split objectAtIndex:u] rangeOfString:@"("].location != NSNotFound)
+                    {
+                        components = [[split objectAtIndex:u] componentsSeparatedByString: @"("];
+                    }
+                    //==================
+                    
+                    for(int i = 0; i < [components count]; i++)
+                    {
+                        if ([[components objectAtIndex:i] rangeOfString:@";"].location != NSNotFound)
+                        {
+                            NSArray* _components = [[split objectAtIndex:u] componentsSeparatedByString: @";"];
+                            for(int c = 0; c < [_components count]; c++)
+                            {
+                                @try //Required
+                                {
+                                    [self deepAnalyzer:file :[_components objectAtIndex:c] :[_components objectAtIndex:c-1] :[_components objectAtIndex:c-2] :_level];
+                                }
+                                @catch (NSException* ex)
+                                {
+                                }
+                            }
+                        }
+                        else
                         {
                             @try //Required
                             {
-                                [self deepAnalyzer:file :[_components objectAtIndex:c] :[_components objectAtIndex:c-1] :[_components objectAtIndex:c-2] :_level];
+                                [self deepAnalyzer:file :[components objectAtIndex:i] :[components objectAtIndex:i-1] :[components objectAtIndex:i-2] :_level];
                             }
                             @catch (NSException* ex)
                             {
                             }
                         }
                     }
-                    else
-                    {
-                        @try //Required
-                        {
-                            [self deepAnalyzer:file :[components objectAtIndex:i] :[components objectAtIndex:i-1] :[components objectAtIndex:i-2] :_level];
-                        }
-                        @catch (NSException* ex)
-                        {
-                        }
-                    }
                 }
             }
+            @catch (NSException* ex)
+            {
+            }
+            
         }
     }
 }
@@ -486,26 +493,32 @@ NSTask* HTTPServer;
                 {
                     BOOL DLmedia = TRUE; //download skin images but not galleries.
                     
+                    //Replace [] with url
+                    for(int t = 0; t < [wixTags count]; t++)
+                    {
+                        if ([_url rangeOfString:[wixTags objectAtIndex:t]].location != NSNotFound)
+                        {
+                            _url = [_url stringByReplacingOccurrencesOfString:[wixTags objectAtIndex:t] withString:[wixTagsURL objectAtIndex:t]];
+                            [self Debug:[NSString stringWithFormat:@"\tHidden Media: %@", _url]];
+                            break;
+                        }
+                    }
+                    
+                    if ([_url rangeOfString:@"/"].location == NSNotFound)
+                    {
+                        _url = [NSString stringWithFormat:@"%@/%@",mediaURL,_url];
+                    }
+                    
                     if ([_url rangeOfString:@"/media" options:NSCaseInsensitiveSearch].location != NSNotFound && [media state] != NSOnState)
                     {
                         DLmedia = FALSE;
                     }
                     
-                    if(DLmedia)
+                    if(DLmedia && ![Bandwidth containsObject:_url])
                     {
-                        //Replace [] with url
-                        for(int t = 0; t < [wixTags count]; t++)
-                        {
-                            if ([_url rangeOfString:[wixTags objectAtIndex:t]].location != NSNotFound)
-                            {
-                                _url = [_url stringByReplacingOccurrencesOfString:[wixTags objectAtIndex:t] withString:[wixTagsURL objectAtIndex:t]];
-                                break;
-                            }
-                        }
+                        [Bandwidth addObject:_url];
                         
                         [self Debug:[NSString stringWithFormat:@"\tHidden Media: %@", _url]];
-                        
-                        _url = [NSString stringWithFormat:@"%@/%@",mediaURL,_url];
                         
                         NSData* webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:_url]];
                         

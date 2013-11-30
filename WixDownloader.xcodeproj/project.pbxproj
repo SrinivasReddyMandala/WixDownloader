@@ -13,6 +13,7 @@
 		6676BDCE18335444004A463B /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 6676BDCD18335444004A463B /* AppDelegate.m */; };
 		6676BDF218336BD8004A463B /* pwned.png in Resources */ = {isa = PBXBuildFile; fileRef = 6676BDF118336BD8004A463B /* pwned.png */; };
 		6676BDF918336EA0004A463B /* wix.icns in Resources */ = {isa = PBXBuildFile; fileRef = 6676BDF818336EA0004A463B /* wix.icns */; };
+		66CE4E48184A8A0C00123FF8 /* index.php in Resources */ = {isa = PBXBuildFile; fileRef = 66CE4E47184A8A0C00123FF8 /* index.php */; };
 		66FC64FE18452ADB00F664CC /* ToolTipController.m in Sources */ = {isa = PBXBuildFile; fileRef = 66FC64FD18452ADB00F664CC /* ToolTipController.m */; };
 		66FC650318452E3E00F664CC /* pwned@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 66FC650218452E3E00F664CC /* pwned@2x.png */; };
 		66FC650518452EAE00F664CC /* tip.png in Resources */ = {isa = PBXBuildFile; fileRef = 66FC650418452EAE00F664CC /* tip.png */; };
@@ -31,6 +32,7 @@
 		6676BDCD18335444004A463B /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		6676BDF118336BD8004A463B /* pwned.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = pwned.png; path = Resources/pwned.png; sourceTree = "<group>"; };
 		6676BDF818336EA0004A463B /* wix.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = wix.icns; path = ../wix.icns; sourceTree = "<group>"; };
+		66CE4E47184A8A0C00123FF8 /* index.php */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.php; name = index.php; path = Resources/index.php; sourceTree = "<group>"; };
 		66FC64FC18452AD700F664CC /* ToolTipController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ToolTipController.h; sourceTree = "<group>"; };
 		66FC64FD18452ADB00F664CC /* ToolTipController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ToolTipController.m; sourceTree = "<group>"; };
 		66FC650218452E3E00F664CC /* pwned@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "pwned@2x.png"; path = "Resources/pwned@2x.png"; sourceTree = "<group>"; };
@@ -97,6 +99,7 @@
 			isa = PBXGroup;
 			children = (
 				664BA5B2183AAFEC00D864EF /* ads.html */,
+				66CE4E47184A8A0C00123FF8 /* index.php */,
 				66FC650218452E3E00F664CC /* pwned@2x.png */,
 				66FC650618452F8500F664CC /* tip@2x.png */,
 				6676BDF118336BD8004A463B /* pwned.png */,
@@ -175,6 +178,7 @@
 				66FC650518452EAE00F664CC /* tip.png in Resources */,
 				66FC650C184531DD00F664CC /* ToolTip.xib in Resources */,
 				66FC650F1845320500F664CC /* MainMenu.xib in Resources */,
+				66CE4E48184A8A0C00123FF8 /* index.php in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -217,9 +221,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_OBJC_ARC = YES;
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
+				CLANG_CXX_LIBRARY = "compiler-default";
+				CLANG_ENABLE_OBJC_ARC = NO;
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
@@ -232,7 +237,7 @@
 				GCC_C_LANGUAGE_STANDARD = "compiler-default";
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
@@ -254,9 +259,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_OBJC_ARC = YES;
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
+				CLANG_CXX_LIBRARY = "compiler-default";
+				CLANG_ENABLE_OBJC_ARC = NO;
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
