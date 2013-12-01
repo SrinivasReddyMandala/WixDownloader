@@ -167,21 +167,6 @@ NSTask* HTTPServer;
             NSString* fileDownload = [jsonHTTP objectAtIndex:i];
             NSArray* domainRoot = [[fileDownload stringByReplacingOccurrencesOfString:@"http://" withString:@""] componentsSeparatedByString: @"/"];
             
-            /*
-             for(int d = 1; d < [domainRoot count]; d++) //we only need first and last
-             {
-             dirRoot = [dirRoot stringByAppendingString:[NSString stringWithFormat:@"%@/",[domainRoot objectAtIndex:d]]];
-             //=========== index.json ============
-             // This is tricky to detect, but wix has many index.json
-             // hidden in directories, make sure we don't miss them
-             if ([dirRoot rangeOfString:@"?"].location == NSNotFound && [[dirRoot pathExtension] length] < 3)
-             {
-             [self fileAnalyzer:[NSString stringWithFormat:@"http://%@/%@index.json",[domainRoot objectAtIndex:0],dirRoot] :@"index.json" :1];
-             }
-             //=========== index.json ============
-             }
-             */
-            
             dirRoot = [self pathFromURL:fileDownload];
             
             [self fileAnalyzer:[NSString stringWithFormat:@"http://%@/%@index.json",[domainRoot objectAtIndex:0],dirRoot] :@"index.json" :1];
@@ -437,13 +422,9 @@ NSTask* HTTPServer;
 
 -(void)deepAnalyzer:(NSString*)file :(NSString*)_url :(NSString*)arg1 :(NSString*)arg2 :(int)_level
 {
-    _url = [self pathTagCleanup:_url];
-    arg1 = [self pathTagCleanup:arg1];
-    arg2 = [self pathTagCleanup:arg2];
-    
-    if ([_url rangeOfString:@"."].location != NSNotFound && [_url rangeOfString:@" "].location == NSNotFound && [_url rangeOfString:@"\n"].location == NSNotFound)
+    if ([_url rangeOfString:@"."].location != NSNotFound && [_url rangeOfString:@"\n"].location == NSNotFound)
     {
-        NSArray* parts = [_url componentsSeparatedByString: @"."];
+        NSArray* parts = [[self pathTagCleanup:_url] componentsSeparatedByString: @"."];
         if([wixExtentions containsObject:[parts objectAtIndex:0]])
         {
             //Take care of brackets
@@ -482,43 +463,64 @@ NSTask* HTTPServer;
             {
                 url = webURL;
             }
+            _url = [self pathTagCleanup:_url];
             
             [self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@%@",url ,_url,ext] :[NSString stringWithFormat:@"%@%@",[_url lastPathComponent],ext] :_level+1];
         }
         else
         {
-            if([jsExtentions containsObject:arg1] || [jsExtentions containsObject:arg2])
+            //==================
+            BOOL hidden = FALSE;
+            for(int i = 0; i < [jsExtentions count]; i++)
             {
-                if([binExtentions containsObject:[_url pathExtension]]) //binary files, no analisys needed
+                if ([arg1 rangeOfString:[jsExtentions objectAtIndex:i]].location != NSNotFound || [arg2 rangeOfString:[jsExtentions objectAtIndex:i]].location != NSNotFound || [_url rangeOfString:[jsExtentions objectAtIndex:i]].location != NSNotFound)
                 {
-                    BOOL DLmedia = TRUE; //download skin images but not galleries.
+                    hidden = TRUE;
+                    break;
+                }
+            }
+            //==================
+            
+            if(hidden)
+            {
+                //Cut ()
+                if ([_url rangeOfString:@")"].location != NSNotFound)
+                {
+                    NSArray* components = [_url componentsSeparatedByString: @")"];
+                    components = [[components objectAtIndex:0] componentsSeparatedByString: @"("];
+                    _url = [components objectAtIndex:[components count]-1];
+                }
+
+                if([binExtentions containsObject:[[self pathTagCleanup:_url] pathExtension]]) //binary files, no analisys needed
+                {
+                    [self Debug:[NSString stringWithFormat:@"\tHidden Media: %@ [%d]", _url, _level]];
                     
-                    //Replace [] with url
-                    for(int t = 0; t < [wixTags count]; t++)
+                    BOOL DLmedia = TRUE; //download skin images but not galleries.
+                    for(int t = 0; t < [wixTags count]; t++)  //Replace [] with url
                     {
                         if ([_url rangeOfString:[wixTags objectAtIndex:t]].location != NSNotFound)
                         {
                             _url = [_url stringByReplacingOccurrencesOfString:[wixTags objectAtIndex:t] withString:[wixTagsURL objectAtIndex:t]];
-                            [self Debug:[NSString stringWithFormat:@"\tHidden Media: %@", _url]];
                             break;
                         }
                     }
                     
+                    _url = [self pathTagCleanup:_url];
+                    
                     if ([_url rangeOfString:@"/"].location == NSNotFound)
                     {
                         _url = [NSString stringWithFormat:@"%@/%@",mediaURL,_url];
+                        file = _url;
                     }
                     
-                    if ([_url rangeOfString:@"/media" options:NSCaseInsensitiveSearch].location != NSNotFound && [media state] != NSOnState)
+                    if ([media state] != NSOnState && _level == 1)
                     {
                         DLmedia = FALSE;
                     }
-                    
+
                     if(DLmedia && ![Bandwidth containsObject:_url])
                     {
                         [Bandwidth addObject:_url];
-                        
-                        [self Debug:[NSString stringWithFormat:@"\tHidden Media: %@", _url]];
                         
                         NSData* webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:_url]];
                         
