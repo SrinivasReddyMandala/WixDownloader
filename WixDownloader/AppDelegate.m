@@ -128,7 +128,7 @@ NSTask* HTTPServer;
     
     //Yes Son! split it
     NSArray *jsonHTTP = [indexHTML componentsSeparatedByString: @"\""];
-    [progress setMaxValue:[jsonHTTP count]];
+    [progress setMaxValue:(int)[jsonHTTP count]];
     
     //==== Propriotery to wix.com ======
     for(int i = 0; i < [jsonHTTP count]; i++)  //Get static URLs dynamically
@@ -240,7 +240,7 @@ NSTask* HTTPServer;
                 
                 //[self Debug:[NSString stringWithFormat:@"Replace %@ > %@", fileDownload,[NSString stringWithFormat:@"%@/%@/%@",[domain stringValue],dirRoot,fileRoot]]];
                 
-                indexHTML = [indexHTML stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"\"%@\"",fileDownload] withString:[self http_correctURL:[NSString stringWithFormat:@"\"%@/%@/%@\"",[domain stringValue],dirRoot,fileRoot]]];
+                indexHTML = [indexHTML stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"\"%@\"",fileDownload] withString:[self http_correctURL:[NSString stringWithFormat:@"\"%@/%@/%@\"",[domain stringValue],dirRoot,[domainRoot objectAtIndex:[domainRoot count]-1]]]];
             }
         }
         else if ([[jsonHTTP objectAtIndex:i] isEqualToString:@"pageId"] && [seo state] == NSOnState) //Crawl for Ajax SEO pages
@@ -254,7 +254,16 @@ NSTask* HTTPServer;
             
              NSString* htmlFile = [[self downloadFile:[NSString stringWithFormat:@"%@/?_escaped_fragment_=%@",[site stringValue],fileRoot]] stringByReplacingOccurrencesOfString:indexSEO withString:@""];
 
-            [htmlFile writeToFile:[NSString stringWithFormat:@"%@/seo/%@.html",DownloadPath,fileRoot] atomically:YES encoding:NSUTF8StringEncoding error:&error];
+            if ([php state] == NSOnState)
+            {
+                 [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/seo/%@",DownloadPath,[fileRoot stringByDeletingLastPathComponent]] withIntermediateDirectories:YES attributes:nil error:nil];
+                [htmlFile writeToFile:[NSString stringWithFormat:@"%@/seo/%@.html",DownloadPath,fileRoot] atomically:YES encoding:NSUTF8StringEncoding error:&error];
+            }
+            else
+            {
+                [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/%@",DownloadPath,[fileRoot stringByDeletingLastPathComponent]] withIntermediateDirectories:YES attributes:nil error:nil];
+                 [htmlFile writeToFile:[NSString stringWithFormat:@"%@/?_escaped_fragment_=%@",DownloadPath,fileRoot] atomically:YES encoding:NSUTF8StringEncoding error:&error];
+            }
         }
         
         float totalcount = [jsonHTTP count];
@@ -266,8 +275,6 @@ NSTask* HTTPServer;
     //Replace important static entries
     //===================================
     indexHTML = [indexHTML stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"\"domain\":\"%@\"",[[site stringValue] stringByReplacingOccurrencesOfString:@"http://" withString:@""]] withString:[NSString stringWithFormat:@"\"domain\":\"%@\"",[[domain stringValue] stringByReplacingOccurrencesOfString:@"http://" withString:@""]]];
-    
-    //indexHTML = [indexHTML stringByReplacingOccurrencesOfString:@"\"baseDomain\":\"wix.com\"" withString:[NSString stringWithFormat:@"\"baseDomain\":\"%@\"",[[[domain stringValue] stringByReplacingOccurrencesOfString:@"http://" withString:@""] stringByReplacingOccurrencesOfString:@"www." withString:@""]]];
     indexHTML = [indexHTML stringByReplacingOccurrencesOfString:@"\"baseDomain\":\"wix.com\"" withString:@"\"baseDomain\":\"/\""];
     //===================================
     
@@ -280,7 +287,6 @@ NSTask* HTTPServer;
         [indexPHP writeToFile:[NSString stringWithFormat:@"%@/index.php",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
     }
     
-
     //Cleanup empty folders
     system([[NSString stringWithFormat:@"find %@ -type d -empty -delete",DownloadPath] UTF8String]);
     
@@ -514,7 +520,8 @@ NSTask* HTTPServer;
                 
                 [self fileAnalyzer:[NSString stringWithFormat:@"%@/%@",[file stringByDeletingLastPathComponent],_url] :[_url lastPathComponent] :_level+1];
                 
-                //[self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@",[file stringByDeletingLastPathComponent],_url] :[_url lastPathComponent] :_level+1];
+                // Hidden java can also be found in javascript folder
+                [self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@",[file stringByDeletingLastPathComponent],_url] :[_url lastPathComponent] :_level+1];
             }
         }
         else
@@ -533,9 +540,6 @@ NSTask* HTTPServer;
                 
                 NSString* url =[file stringByDeletingLastPathComponent];
                 NSString* ext = @".js";
-                
-                //same directory
-                //[self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@.js",url ,_url] :[NSString stringWithFormat:@"%@.js",[_url lastPathComponent]]];
                 
                 //other logical places (no worries duplicates will be ignored)
                 if ([_url rangeOfString:@"/skin" options:NSCaseInsensitiveSearch].location != NSNotFound)
