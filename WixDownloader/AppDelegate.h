@@ -10,6 +10,7 @@
     IBOutlet NSButton* media;
     IBOutlet NSButton* editor;
     IBOutlet NSButton* php;
+    IBOutlet NSButton* seo;
     IBOutlet NSProgressIndicator *loading;
     IBOutlet NSProgressIndicator *progress;
     IBOutlet NSTextField* percent;

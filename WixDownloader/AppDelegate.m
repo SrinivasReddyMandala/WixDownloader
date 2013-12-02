@@ -110,13 +110,20 @@ NSTask* HTTPServer;
     
     NSString *indexHTML = [self downloadFile:[site stringValue]];
     NSString *indexADS = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/ads.html",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
-    
+    NSString *indexSEO = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/seo.html",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
+
     //Prevent ":" in the directory name as port#
     DownloadPath = [DownloadPath stringByReplacingOccurrencesOfString:@":" withString:@"-"];
     [[NSFileManager defaultManager] createDirectoryAtPath:DownloadPath withIntermediateDirectories:NO attributes:nil error:&error];
     
-    //Save original
     indexHTML = [indexHTML stringByReplacingOccurrencesOfString:indexADS withString:@""]; //Remove Ads
+    
+    if ([seo state] == NSOnState) //Enable SEO
+    {
+        indexHTML = [indexHTML stringByReplacingOccurrencesOfString:indexSEO withString:@""];
+    }
+    
+    //Save original
     [indexHTML writeToFile:[NSString stringWithFormat:@"%@/index.original.html",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
     
     //Yes Son! split it
@@ -236,16 +243,18 @@ NSTask* HTTPServer;
                 indexHTML = [indexHTML stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"\"%@\"",fileDownload] withString:[self http_correctURL:[NSString stringWithFormat:@"\"%@/%@/%@\"",[domain stringValue],dirRoot,fileRoot]]];
             }
         }
-        else if ([[jsonHTTP objectAtIndex:i] isEqualToString:@"pageId"]) //Crawl for Ajax SEO pages
+        else if ([[jsonHTTP objectAtIndex:i] isEqualToString:@"pageId"] && [seo state] == NSOnState) //Crawl for Ajax SEO pages
         {
             NSString* fileRoot = [NSString stringWithFormat:@"%@/%@",[jsonHTTP objectAtIndex:i+6],[jsonHTTP objectAtIndex:i+2]];
             fileRoot = [fileRoot stringByReplacingOccurrencesOfString:@" " withString:@"-"];
             
-            NSData* webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/?_escaped_fragment_=%@",[domain stringValue],fileRoot]]];
-            if ([webBinary writeToFile:[NSString stringWithFormat:@"%@/seo/%@.html",DownloadPath,fileRoot] atomically:YES])
-            {
-                 [self Debug:[NSString stringWithFormat:@"SEO: %@", fileRoot]];
-            }
+            [self Debug:[NSString stringWithFormat:@"SEO: %@/?_escaped_fragment_=%@", [site stringValue], fileRoot]];
+            
+            [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/seo/%@",DownloadPath,[fileRoot stringByDeletingLastPathComponent]] withIntermediateDirectories:YES attributes:nil error:nil];
+            
+             NSString* htmlFile = [[self downloadFile:[NSString stringWithFormat:@"%@/?_escaped_fragment_=%@",[site stringValue],fileRoot]] stringByReplacingOccurrencesOfString:indexSEO withString:@""];
+
+            [htmlFile writeToFile:[NSString stringWithFormat:@"%@/seo/%@.html",DownloadPath,fileRoot] atomically:YES encoding:NSUTF8StringEncoding error:&error];
         }
         
         float totalcount = [jsonHTTP count];
@@ -271,6 +280,7 @@ NSTask* HTTPServer;
         [indexPHP writeToFile:[NSString stringWithFormat:@"%@/index.php",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
     }
     
+
     //Cleanup empty folders
     system([[NSString stringWithFormat:@"find %@ -type d -empty -delete",DownloadPath] UTF8String]);
     
@@ -643,6 +653,17 @@ NSTask* HTTPServer;
         if ([php state] == NSOnState)
         {
             tipController.tip = @"EXPERIMENTAL: Emulate dynamic image size with php";
+        }
+        else
+        {
+            show = FALSE;
+        }
+    }
+    else if([[button title] isEqualToString:@"Enable SEO"])
+    {
+        if ([seo state] == NSOnState)
+        {
+            tipController.tip = @"Search Engines like Google will be able to find your website";
         }
         else
         {
