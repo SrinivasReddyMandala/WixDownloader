@@ -236,6 +236,17 @@ NSTask* HTTPServer;
                 indexHTML = [indexHTML stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"\"%@\"",fileDownload] withString:[self http_correctURL:[NSString stringWithFormat:@"\"%@/%@/%@\"",[domain stringValue],dirRoot,fileRoot]]];
             }
         }
+        else if ([[jsonHTTP objectAtIndex:i] isEqualToString:@"pageId"]) //Crawl for Ajax SEO pages
+        {
+            NSString* fileRoot = [NSString stringWithFormat:@"%@/%@",[jsonHTTP objectAtIndex:i+6],[jsonHTTP objectAtIndex:i+2]];
+            fileRoot = [fileRoot stringByReplacingOccurrencesOfString:@" " withString:@"-"];
+            
+            NSData* webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/?_escaped_fragment_=%@",[domain stringValue],fileRoot]]];
+            if ([webBinary writeToFile:[NSString stringWithFormat:@"%@/seo/%@.html",DownloadPath,fileRoot] atomically:YES])
+            {
+                 [self Debug:[NSString stringWithFormat:@"SEO: %@", fileRoot]];
+            }
+        }
         
         float totalcount = [jsonHTTP count];
         float currentcount = i;
@@ -259,8 +270,6 @@ NSTask* HTTPServer;
         
         [indexPHP writeToFile:[NSString stringWithFormat:@"%@/index.php",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
     }
-    
-    //TODO: Crawl for Ajax SEO pages
     
     //Cleanup empty folders
     system([[NSString stringWithFormat:@"find %@ -type d -empty -delete",DownloadPath] UTF8String]);
