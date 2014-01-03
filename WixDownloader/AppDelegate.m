@@ -111,7 +111,7 @@ NSTask* HTTPServer;
     NSString *indexHTML = [self downloadFile:[site stringValue]];
     NSString *indexADS = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/ads.html",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
     NSString *indexSEO = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/seo.html",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
-
+    
     //Prevent ":" in the directory name as port#
     DownloadPath = [DownloadPath stringByReplacingOccurrencesOfString:@":" withString:@"-"];
     [[NSFileManager defaultManager] createDirectoryAtPath:DownloadPath withIntermediateDirectories:NO attributes:nil error:&error];
@@ -252,17 +252,17 @@ NSTask* HTTPServer;
             
             [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/seo/%@",DownloadPath,[fileRoot stringByDeletingLastPathComponent]] withIntermediateDirectories:YES attributes:nil error:nil];
             
-             NSString* htmlFile = [[self downloadFile:[NSString stringWithFormat:@"%@/?_escaped_fragment_=%@",[site stringValue],fileRoot]] stringByReplacingOccurrencesOfString:indexSEO withString:@""];
-
+            NSString* htmlFile = [[self downloadFile:[NSString stringWithFormat:@"%@/?_escaped_fragment_=%@",[site stringValue],fileRoot]] stringByReplacingOccurrencesOfString:indexSEO withString:@""];
+            
             if ([php state] == NSOnState)
             {
-                 [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/seo/%@",DownloadPath,[fileRoot stringByDeletingLastPathComponent]] withIntermediateDirectories:YES attributes:nil error:nil];
+                [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/seo/%@",DownloadPath,[fileRoot stringByDeletingLastPathComponent]] withIntermediateDirectories:YES attributes:nil error:nil];
                 [htmlFile writeToFile:[NSString stringWithFormat:@"%@/seo/%@.html",DownloadPath,fileRoot] atomically:YES encoding:NSUTF8StringEncoding error:&error];
             }
             else
             {
                 [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/%@",DownloadPath,[fileRoot stringByDeletingLastPathComponent]] withIntermediateDirectories:YES attributes:nil error:nil];
-                 [htmlFile writeToFile:[NSString stringWithFormat:@"%@/?_escaped_fragment_=%@",DownloadPath,fileRoot] atomically:YES encoding:NSUTF8StringEncoding error:&error];
+                [htmlFile writeToFile:[NSString stringWithFormat:@"%@/?_escaped_fragment_=%@",DownloadPath,fileRoot] atomically:YES encoding:NSUTF8StringEncoding error:&error];
             }
         }
         
@@ -449,117 +449,124 @@ NSTask* HTTPServer;
 
 -(void)deepAnalyzer:(NSString*)file :(NSString*)_url :(NSString*)arg1 :(NSString*)arg2 :(int)_level
 {
-    if ([_url rangeOfString:@"."].location != NSNotFound && [_url rangeOfString:@"\n"].location == NSNotFound)
+    @try //Just in case
     {
-        _url = [self bracketsCleanup:_url];
-        
-        //[self Debug:[NSString stringWithFormat:@"\tDeep Analyzer: %@ (%@,%@)",_url, arg1,arg2]];
-        
-        //==================
-        BOOL hidden = FALSE;
-        for(int i = 0; i < [jsExtentions count]; i++)
+        if ([_url rangeOfString:@"."].location != NSNotFound && [_url rangeOfString:@"\n"].location == NSNotFound)
         {
-            if ([arg1 rangeOfString:[jsExtentions objectAtIndex:i]].location != NSNotFound || [arg2 rangeOfString:[jsExtentions objectAtIndex:i]].location != NSNotFound || [_url rangeOfString:[jsExtentions objectAtIndex:i]].location != NSNotFound)
+            _url = [self bracketsCleanup:_url];
+            
+            //[self Debug:[NSString stringWithFormat:@"\tDeep Analyzer: %@ (%@,%@)",_url, arg1,arg2]];
+            
+            //==================
+            BOOL hidden = FALSE;
+            for(int i = 0; i < [jsExtentions count]; i++)
             {
-                hidden = TRUE;
-                break;
+                if ([arg1 rangeOfString:[jsExtentions objectAtIndex:i]].location != NSNotFound || [arg2 rangeOfString:[jsExtentions objectAtIndex:i]].location != NSNotFound || [_url rangeOfString:[jsExtentions objectAtIndex:i]].location != NSNotFound)
+                {
+                    hidden = TRUE;
+                    break;
+                }
             }
-        }
-        //==================
-        
-        if(hidden)
-        {
-            if([binExtentions containsObject:[[self pathTagCleanup:_url] pathExtension]]) //binary files, no analisys needed
+            //==================
+            
+            if(hidden)
             {
-                [self Debug:[NSString stringWithFormat:@"\tHidden Media: %@ [%d]", [self pathTagCleanup:_url], _level]];
-                
-                BOOL DLmedia = TRUE; //download skin images but not galleries.
-                for(int t = 0; t < [wixTags count]; t++)  //Replace [] with url
+                if([binExtentions containsObject:[[self pathTagCleanup:_url] pathExtension]]) //binary files, no analisys needed
                 {
-                    if ([_url rangeOfString:[wixTags objectAtIndex:t]].location != NSNotFound)
+                    [self Debug:[NSString stringWithFormat:@"\tHidden Media: %@ [%d]", [self pathTagCleanup:_url], _level]];
+                    
+                    BOOL DLmedia = TRUE; //download skin images but not galleries.
+                    for(int t = 0; t < [wixTags count]; t++)  //Replace [] with url
                     {
-                        _url = [_url stringByReplacingOccurrencesOfString:[wixTags objectAtIndex:t] withString:[wixTagsURL objectAtIndex:t]];
-                        break;
-                    }
-                }
-                
-                _url = [self pathTagCleanup:_url];
-                
-                if ([_url rangeOfString:@"/"].location == NSNotFound)
-                {
-                    _url = [NSString stringWithFormat:@"%@/%@",mediaURL,_url];
-                    file = _url;
-                }
-                
-                if ([media state] != NSOnState && _level == 1)
-                {
-                    DLmedia = FALSE;
-                }
-                
-                if(DLmedia && ![Bandwidth containsObject:_url])
-                {
-                    [Bandwidth addObject:_url];
-                    
-                    NSData* webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:_url]];
-                    
-                    [[NSFileManager defaultManager] createDirectoryAtPath:[[NSString stringWithFormat:@"%@/%@",DownloadPath,[self pathFromURL:_url]] stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
-                    
-                    if ([webBinary writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],_url] atomically:YES])
-                    {
-                        //TODO: wix has a dynamic image by size, make php to emulate the same
-                        if ([php state] == NSOnState)
+                        if ([_url rangeOfString:[wixTags objectAtIndex:t]].location != NSNotFound)
                         {
-                            
+                            _url = [_url stringByReplacingOccurrencesOfString:[wixTags objectAtIndex:t] withString:[wixTagsURL objectAtIndex:t]];
+                            break;
+                        }
+                    }
+                    
+                    _url = [self pathTagCleanup:_url];
+                    
+                    if ([_url rangeOfString:@"/"].location == NSNotFound)
+                    {
+                        _url = [NSString stringWithFormat:@"%@/%@",mediaURL,_url];
+                        file = _url;
+                    }
+                    
+                    if ([media state] != NSOnState && _level == 1)
+                    {
+                        DLmedia = FALSE;
+                    }
+                    
+                    if(DLmedia && ![Bandwidth containsObject:_url])
+                    {
+                        [Bandwidth addObject:_url];
+                        
+                        NSData* webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:_url]];
+                        
+                        [[NSFileManager defaultManager] createDirectoryAtPath:[[NSString stringWithFormat:@"%@/%@",DownloadPath,[self pathFromURL:_url]] stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
+                        
+                        if ([webBinary writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],_url] atomically:YES])
+                        {
+                            //TODO: wix has a dynamic image by size, make php to emulate the same
+                            if ([php state] == NSOnState)
+                            {
+                                
+                            }
                         }
                     }
                 }
+                else if([txtExtentions containsObject:[_url pathExtension]])
+                {
+                    [self Debug:[NSString stringWithFormat:@"\tHidden File: %@",_url]];
+                    
+                    [self fileAnalyzer:[NSString stringWithFormat:@"%@/%@",[file stringByDeletingLastPathComponent],_url] :[_url lastPathComponent] :_level+1];
+                    
+                    // Hidden java can also be found in javascript folder
+                    [self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@",[file stringByDeletingLastPathComponent],_url] :[_url lastPathComponent] :_level+1];
+                }
             }
-            else if([txtExtentions containsObject:[_url pathExtension]])
+            else
             {
-                [self Debug:[NSString stringWithFormat:@"\tHidden File: %@",_url]];
+                NSArray* parts = [[self pathTagCleanup:_url] componentsSeparatedByString: @"."];
                 
-                [self fileAnalyzer:[NSString stringWithFormat:@"%@/%@",[file stringByDeletingLastPathComponent],_url] :[_url lastPathComponent] :_level+1];
-                
-                // Hidden java can also be found in javascript folder
-                [self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@",[file stringByDeletingLastPathComponent],_url] :[_url lastPathComponent] :_level+1];
+                if([wixExtentions containsObject:[parts objectAtIndex:0]])
+                {
+                    _url = [_url stringByReplacingOccurrencesOfString:@"." withString:@"/"];
+                    
+                    [self Debug:[NSString stringWithFormat:@"\tHidden JavaScript: %@.js",_url]];
+                    
+                    // Example:
+                    // wysiwyg.viewer.skins.VideoSkin > http://static.parastorage.com/services/skins/services/skins/2.648.0/javascript/wysiwyg/viewer/skins/VideoSkin.js
+                    // wysiwyg.viewer.components.WPhoto > http://static.parastorage.com/services/web/2.648.0/javascript/wysiwyg/viewer/components/WPhoto.js
+                    
+                    NSString* url =[file stringByDeletingLastPathComponent];
+                    NSString* ext = @".js";
+                    
+                    //other logical places (no worries duplicates will be ignored)
+                    if ([_url rangeOfString:@"/skin" options:NSCaseInsensitiveSearch].location != NSNotFound)
+                    {
+                        url = skinURL;
+                    }
+                    else if ([_url rangeOfString:@"/core" options:NSCaseInsensitiveSearch].location != NSNotFound)
+                    {
+                        _url = [_url stringByReplacingOccurrencesOfString:@"mobile/" withString:@""]; // ..looks like "mobile" is being ignored in path
+                        url =  coreURL;
+                    }
+                    else if ([_url rangeOfString:@"/components" options:NSCaseInsensitiveSearch].location != NSNotFound)
+                    {
+                        url = webURL;
+                    }
+                    _url = [self pathTagCleanup:_url];
+                    
+                    [self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@%@",url ,_url,ext] :[NSString stringWithFormat:@"%@%@",[_url lastPathComponent],ext] :_level+1];
+                }
             }
         }
-        else
-        {
-            NSArray* parts = [[self pathTagCleanup:_url] componentsSeparatedByString: @"."];
-            
-            if([wixExtentions containsObject:[parts objectAtIndex:0]])
-            {
-                _url = [_url stringByReplacingOccurrencesOfString:@"." withString:@"/"];
-                
-                [self Debug:[NSString stringWithFormat:@"\tHidden JavaScript: %@.js",_url]];
-                
-                // Example:
-                // wysiwyg.viewer.skins.VideoSkin > http://static.parastorage.com/services/skins/services/skins/2.648.0/javascript/wysiwyg/viewer/skins/VideoSkin.js
-                // wysiwyg.viewer.components.WPhoto > http://static.parastorage.com/services/web/2.648.0/javascript/wysiwyg/viewer/components/WPhoto.js
-                
-                NSString* url =[file stringByDeletingLastPathComponent];
-                NSString* ext = @".js";
-                
-                //other logical places (no worries duplicates will be ignored)
-                if ([_url rangeOfString:@"/skin" options:NSCaseInsensitiveSearch].location != NSNotFound)
-                {
-                    url = skinURL;
-                }
-                else if ([_url rangeOfString:@"/core" options:NSCaseInsensitiveSearch].location != NSNotFound)
-                {
-                    _url = [_url stringByReplacingOccurrencesOfString:@"mobile/" withString:@""]; // ..looks like "mobile" is being ignored in path
-                    url =  coreURL;
-                }
-                else if ([_url rangeOfString:@"/components" options:NSCaseInsensitiveSearch].location != NSNotFound)
-                {
-                    url = webURL;
-                }
-                _url = [self pathTagCleanup:_url];
-                
-                [self fileAnalyzer:[NSString stringWithFormat:@"%@/javascript/%@%@",url ,_url,ext] :[NSString stringWithFormat:@"%@%@",[_url lastPathComponent],ext] :_level+1];
-            }
-        }
+    }
+    @catch (NSException* ex)
+    {
+        [self Debug:[NSString stringWithFormat:@"> ERROR: %@ (%@)",file, ex]];
     }
 }
 
