@@ -365,6 +365,10 @@ NSTask* HTTPServer;
 
 -(void)fileAnalyzer:(NSString*)file :(NSString*)fileRoot :(int)_level
 {
+    @autoreleasepool
+    {
+    @try //Just in case
+    {
     //Apple Bug? when doing stringByDeletingLastPathComponent for URL it kicks out one of slash from http://
     file = [self http_correctURL: file];
     
@@ -383,8 +387,6 @@ NSTask* HTTPServer;
         NSArray *split;
         if(([[fileRoot pathExtension] isEqualToString:@"js"] || [[fileRoot pathExtension] isEqualToString:@"json"] || [[fileRoot pathExtension] isEqualToString:@"z"]) && _level <= [[level stringValue] intValue])
         {
-            @try //Just in case
-            {
                 if ([webfile rangeOfString:@","].location != NSNotFound)
                 {
                     split = [webfile componentsSeparatedByString: @","];
@@ -438,17 +440,20 @@ NSTask* HTTPServer;
                         }
                     }
                 }
-            }
-            @catch (NSException* ex)
-            {
-                [self Debug:[NSString stringWithFormat:@"> ERROR: %@ (%@)",file, ex]];
-            }
         }
+    }
+    }
+    @catch (NSException* ex)
+    {
+        [self Debug:[NSString stringWithFormat:@"> ERROR: %@ (%@)",file, ex]];
+    }
     }
 }
 
 -(void)deepAnalyzer:(NSString*)file :(NSString*)_url :(NSString*)arg1 :(NSString*)arg2 :(int)_level
 {
+    @autoreleasepool
+    {
     @try //Just in case
     {
         if ([_url rangeOfString:@"."].location != NSNotFound && [_url rangeOfString:@"\n"].location == NSNotFound)
@@ -567,6 +572,7 @@ NSTask* HTTPServer;
     @catch (NSException* ex)
     {
         [self Debug:[NSString stringWithFormat:@"> ERROR: %@ (%@)",file, ex]];
+    }
     }
 }
 
