@@ -15,6 +15,7 @@ NSArray* wixTags;
 NSArray* wixTagsURL;
 NSString* skinURL;
 NSString* webURL;
+NSString* wixappsURL;
 NSString* coreURL;
 NSString* mediaURL;
 NSTask* HTTPServer;
@@ -59,8 +60,14 @@ NSTask* HTTPServer;
         
         //Fool's day incoming folks
         [request setHTTPMethod:@"GET"];
-        [request addValue:@"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:25.0) Gecko/20100101 Firefox/25.0" forHTTPHeaderField: @"User-Agent"];
-        
+        if([[agent stringValue] isEqualToString:@"Internet Explorer"])
+        {
+            [request addValue:@"Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1)" forHTTPHeaderField: @"User-Agent"];
+        }
+        else
+        {
+            [request addValue:@"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9) Gecko/20100101 Firefox/25.0" forHTTPHeaderField: @"User-Agent"];
+        }
         //Usually a good idea, as a security measure some files can be protected if no refferer
         //http://en.wikipedia.org/wiki/HTTP_referer
         [request addValue:url forHTTPHeaderField: @"Referer"];
@@ -82,7 +89,6 @@ NSTask* HTTPServer;
         {
             //[self Debug:[NSString stringWithFormat:@"Downloading ERROR (%ld): %@", [urlResponse statusCode], url]];
         }
-        
     }
     return NULL;
 }
@@ -130,6 +136,7 @@ NSTask* HTTPServer;
     NSArray *jsonHTTP = [indexHTML componentsSeparatedByString: @"\""];
     [progress setMaxValue:(int)[jsonHTTP count]];
     
+    
     //==== Propriotery to wix.com ======
     for(int i = 0; i < [jsonHTTP count]; i++)  //Get static URLs dynamically
     {
@@ -144,6 +151,10 @@ NSTask* HTTPServer;
         else if ([[jsonHTTP objectAtIndex:i] isEqualToString:@"core"])
         {
             coreURL = [jsonHTTP objectAtIndex:i+2];
+        }
+        else if ([[jsonHTTP objectAtIndex:i] isEqualToString:@"wixapps"])
+        {
+            wixappsURL = [jsonHTTP objectAtIndex:i+2];
         }
         else if ([[jsonHTTP objectAtIndex:i] isEqualToString:@"staticMediaUrl"])
         {
@@ -161,7 +172,6 @@ NSTask* HTTPServer;
     //[webThemeDir]             =   WEB_THEME_DIRECTORY
     //==================================
     
-    
     for(int i = 0; i < [jsonHTTP count]; i++)
     {
         if ([[jsonHTTP objectAtIndex:i] rangeOfString:@"http://"].location != NSNotFound && [[jsonHTTP objectAtIndex:i] rangeOfString:@"\n"].location == NSNotFound) //pick only url and avoid comments
@@ -170,16 +180,14 @@ NSTask* HTTPServer;
                 [NSThread exit];
             
             //===================================
-            NSString* dirRoot = [[NSString alloc] init];
             NSString* fileDownload = [jsonHTTP objectAtIndex:i];
             NSArray* domainRoot = [[fileDownload stringByReplacingOccurrencesOfString:@"http://" withString:@""] componentsSeparatedByString: @"/"];
             
-            dirRoot = [self pathFromURL:fileDownload];
+            NSString* dirRoot = [self pathFromURL:fileDownload];
             
             [self fileAnalyzer:[NSString stringWithFormat:@"http://%@/%@index.json",[domainRoot objectAtIndex:0],dirRoot] :@"index.json" :1];
             
             [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/%@",DownloadPath,dirRoot] withIntermediateDirectories:YES attributes:nil error:&error];
-            
             
             NSString* fileRoot = [domainRoot objectAtIndex:[domainRoot count]-1];
             //Get rid of ? in the filename. This is ussually means the the file at the server is dynamic. like a PHP script but we don't care, we need static
@@ -273,6 +281,40 @@ NSTask* HTTPServer;
         [percent setStringValue:[NSString stringWithFormat:@"%.1f %%", currentcount / totalcount * 100]];
         [progress setDoubleValue:i];
     }
+    
+    //===================================
+    //Pickup missing files (Not the best solution but it should do) Thanks to: Zocker-3001
+    
+    NSString* missingFiles = [NSString stringWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/dynamicmodel.txt",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:NULL];
+    for (NSString *line in [missingFiles componentsSeparatedByString:@"\n"]) //read file line-by-line
+    {
+        if ([line rangeOfString:@"[url]"].location != NSNotFound)
+        {
+            line = [line stringByReplacingOccurrencesOfString:@"[url]" withString:[site stringValue]];
+        }
+        else if ([line rangeOfString:@"[skins]"].location != NSNotFound)
+        {
+            line = [line stringByReplacingOccurrencesOfString:@"[skins]" withString:skinURL];
+        }
+        else if ([line rangeOfString:@"[web]"].location != NSNotFound)
+        {
+            line = [line stringByReplacingOccurrencesOfString:@"[web]" withString:webURL];
+        }
+        else if ([line rangeOfString:@"[core]"].location != NSNotFound)
+        {
+            line = [line stringByReplacingOccurrencesOfString:@"[core]" withString:coreURL];
+        }
+        else if ([line rangeOfString:@"[wixapps]"].location != NSNotFound)
+        {
+            line = [line stringByReplacingOccurrencesOfString:@"[wixapps]" withString:wixappsURL];
+        }
+        
+        NSArray* domainRoot = [[line stringByReplacingOccurrencesOfString:@"http://" withString:@""] componentsSeparatedByString: @"/"];
+        NSString* fileRoot = [domainRoot objectAtIndex:[domainRoot count]-1];
+ 
+        [self fileAnalyzer:line :fileRoot :1];
+    }
+    //===================================
     
     //Replace important static entries
     //===================================
@@ -555,19 +597,25 @@ NSTask* HTTPServer;
                         // wysiwyg.viewer.components.WPhoto > http://static.parastorage.com/services/web/2.648.0/javascript/wysiwyg/viewer/components/WPhoto.js
                         
                         NSString* url =[file stringByDeletingLastPathComponent];
+                        NSArray* urlstart = [url componentsSeparatedByString: @"/"];
                         NSString* ext = @".js";
                         
                         //other logical places (no worries duplicates will be ignored)
-                        if ([_url rangeOfString:@"/skin" options:NSCaseInsensitiveSearch].location != NSNotFound)
+                        if ([[urlstart objectAtIndex:0] rangeOfString:@"skins" options:NSCaseInsensitiveSearch].location != NSNotFound)
                         {
                             url = skinURL;
                         }
-                        else if ([_url rangeOfString:@"/core" options:NSCaseInsensitiveSearch].location != NSNotFound)
+                        else if ([[urlstart objectAtIndex:3] rangeOfString:@"skins" options:NSCaseInsensitiveSearch].location != NSNotFound)
+                        {
+                            //TODO: Do we need this? skins maybe pickedup by [urlstart objectAtIndex:0]
+                            url = skinURL;
+                        }
+                        else if ([[urlstart objectAtIndex:0] rangeOfString:@"core" options:NSCaseInsensitiveSearch].location != NSNotFound)
                         {
                             _url = [_url stringByReplacingOccurrencesOfString:@"mobile/" withString:@""]; // ..looks like "mobile" is being ignored in path
                             url =  coreURL;
                         }
-                        else if ([_url rangeOfString:@"/components" options:NSCaseInsensitiveSearch].location != NSNotFound)
+                        else if ([[urlstart objectAtIndex:0] rangeOfString:@"components" options:NSCaseInsensitiveSearch].location != NSNotFound)
                         {
                             url = webURL;
                         }
@@ -625,6 +673,10 @@ NSTask* HTTPServer;
     if([binExtentions containsObject:[url pathExtension]] || [txtExtentions containsObject:[url pathExtension]] || [url rangeOfString:@"?"].location != NSNotFound)
     {
         end = [domainRoot count] - 1;
+    }
+    else if([[url pathExtension] isEqualToString:@""]) //if filename has no extention
+    {
+        end = [domainRoot count] -1;
     }
     
     NSString* buildURL = @"";

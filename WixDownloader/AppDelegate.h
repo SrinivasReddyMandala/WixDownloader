@@ -6,6 +6,7 @@
     IBOutlet NSTextField* site;
     IBOutlet NSTextField* domain;
     IBOutlet NSButton* download;
+    IBOutlet NSComboBox* agent;
     IBOutlet NSTextField* level;
     IBOutlet NSButton* media;
     IBOutlet NSButton* editor;

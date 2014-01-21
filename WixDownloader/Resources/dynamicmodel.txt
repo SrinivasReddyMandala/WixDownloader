@@ -1,0 +1,6 @@
+[url]/_api/dynamicmodel
+[skins]/javascript/skins/core/InlineSkin.js
+[skins]/javascript/skins/core/ImageNewSkin.js
+[web]/javascript/wysiwyg/editor/components/traits/FixedComponentTrait.js
+[wixapps]/javascript/wixapps/apps/news/descriptor.js
+[wixapps]/javascript/wixapps/core/views/ViewBuilder.js
