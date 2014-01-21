@@ -404,6 +404,8 @@ NSTask* HTTPServer;
     }
     url = [url stringByReplacingOccurrencesOfString:@"http:/" withString:@"http://"];
     
+    url = [url stringByReplacingOccurrencesOfString:@"http://http://" withString:@"http://"]; //Whaaa, just check.
+    
     return url;
 }
 
@@ -601,16 +603,7 @@ NSTask* HTTPServer;
                         NSString* ext = @".js";
                         
                         //other logical places (no worries duplicates will be ignored)
-                        if ([[urlstart objectAtIndex:0] rangeOfString:@"skins" options:NSCaseInsensitiveSearch].location != NSNotFound)
-                        {
-                            url = skinURL;
-                        }
-                        else if ([[urlstart objectAtIndex:3] rangeOfString:@"skins" options:NSCaseInsensitiveSearch].location != NSNotFound)
-                        {
-                            //TODO: Do we need this? skins maybe pickedup by [urlstart objectAtIndex:0]
-                            url = skinURL;
-                        }
-                        else if ([[urlstart objectAtIndex:0] rangeOfString:@"core" options:NSCaseInsensitiveSearch].location != NSNotFound)
+                        if ([[urlstart objectAtIndex:0] rangeOfString:@"core" options:NSCaseInsensitiveSearch].location != NSNotFound)
                         {
                             _url = [_url stringByReplacingOccurrencesOfString:@"mobile/" withString:@""]; // ..looks like "mobile" is being ignored in path
                             url =  coreURL;
@@ -618,6 +611,10 @@ NSTask* HTTPServer;
                         else if ([[urlstart objectAtIndex:0] rangeOfString:@"components" options:NSCaseInsensitiveSearch].location != NSNotFound)
                         {
                             url = webURL;
+                        }
+                        else if ([url rangeOfString:@"skins" options:NSCaseInsensitiveSearch].location != NSNotFound)
+                        {
+                            url = skinURL;
                         }
                         _url = [self pathTagCleanup:_url];
                         
