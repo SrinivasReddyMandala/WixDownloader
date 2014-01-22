@@ -118,13 +118,21 @@ NSTask* HTTPServer;
     NSString *indexAdHeader = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/adheader.html",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
     NSString *indexAdFooter = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/adfooter.html",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
     NSString *indexSEO = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/seo.html",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
-    
+
     //Prevent ":" in the directory name as port#
     DownloadPath = [DownloadPath stringByReplacingOccurrencesOfString:@":" withString:@"-"];
     [[NSFileManager defaultManager] createDirectoryAtPath:DownloadPath withIntermediateDirectories:NO attributes:nil error:&error];
     
     indexHTML = [indexHTML stringByReplacingOccurrencesOfString:indexAdHeader withString:@""]; //Remove Ad Header
     indexHTML = [indexHTML stringByReplacingOccurrencesOfString:indexAdFooter withString:@""]; //Remove Ad Footer
+    
+    //===================================
+    //Add IE support Thanks to: Zocker-3001
+    NSString *indexIE = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/html5shiv.html",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
+    indexHTML = [indexHTML stringByReplacingOccurrencesOfString:@"</head>" withString:[NSString stringWithFormat:@"%@\n</head>",indexIE]];
+    NSData* webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:@"http://html5shiv.googlecode.com/svn/trunk/html5.js"]];
+    [webBinary writeToFile:[NSString stringWithFormat:@"%@/html5.js",DownloadPath] atomically:YES];
+    //===================================
     
     if ([seo state] == NSOnState) //Enable SEO
     {
@@ -137,7 +145,6 @@ NSTask* HTTPServer;
     //Yes Son! split it
     NSArray *jsonHTTP = [indexHTML componentsSeparatedByString: @"\""];
     [progress setMaxValue:(int)[jsonHTTP count]];
-    
     
     //==== Propriotery to wix.com ======
     for(int i = 0; i < [jsonHTTP count]; i++)  //Get static URLs dynamically
@@ -345,6 +352,7 @@ NSTask* HTTPServer;
     
     //Remove other not interesting folders
     system([[NSString stringWithFormat:@"rm -r %@/index.json",DownloadPath] UTF8String]);
+    system([[NSString stringWithFormat:@"rm -r %@/www.wix.com",DownloadPath] UTF8String]);
     system([[NSString stringWithFormat:@"rm -r %@/new",DownloadPath] UTF8String]);
     system([[NSString stringWithFormat:@"rm -r %@/create",DownloadPath] UTF8String]);
     system([[NSString stringWithFormat:@"rm -r %@/plebs",DownloadPath] UTF8String]);
