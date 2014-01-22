@@ -115,14 +115,16 @@ NSTask* HTTPServer;
     DownloadPath = [NSString stringWithFormat:@"%@/Downloads/%@",NSHomeDirectory(),[[domain stringValue] stringByReplacingOccurrencesOfString:@"http://" withString:@""]];
     
     NSString *indexHTML = [self downloadFile:[site stringValue]];
-    NSString *indexADS = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/ads.html",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
+    NSString *indexAdHeader = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/adheader.html",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
+    NSString *indexAdFooter = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/adfooter.html",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
     NSString *indexSEO = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/seo.html",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
     
     //Prevent ":" in the directory name as port#
     DownloadPath = [DownloadPath stringByReplacingOccurrencesOfString:@":" withString:@"-"];
     [[NSFileManager defaultManager] createDirectoryAtPath:DownloadPath withIntermediateDirectories:NO attributes:nil error:&error];
     
-    indexHTML = [indexHTML stringByReplacingOccurrencesOfString:indexADS withString:@""]; //Remove Ads
+    indexHTML = [indexHTML stringByReplacingOccurrencesOfString:indexAdHeader withString:@""]; //Remove Ad Header
+    indexHTML = [indexHTML stringByReplacingOccurrencesOfString:indexAdFooter withString:@""]; //Remove Ad Footer
     
     if ([seo state] == NSOnState) //Enable SEO
     {
@@ -311,9 +313,16 @@ NSTask* HTTPServer;
         
         NSArray* domainRoot = [[line stringByReplacingOccurrencesOfString:@"http://" withString:@""] componentsSeparatedByString: @"/"];
         NSString* fileRoot = [domainRoot objectAtIndex:[domainRoot count]-1];
- 
-        [self fileAnalyzer:line :fileRoot :1];
+        
+        //if ([line rangeOfString:[site stringValue]].location != NSNotFound) //if own site url
+        //{
+        //    NSData* webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:line]];
+        //    [webBinary writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:line],fileRoot] atomically:YES];
+        //}else{
+            [self fileAnalyzer:line :fileRoot :1];
+        //}
     }
+    
     //===================================
     
     //Replace important static entries
@@ -335,6 +344,7 @@ NSTask* HTTPServer;
     system([[NSString stringWithFormat:@"find %@ -type d -empty -delete",DownloadPath] UTF8String]);
     
     //Remove other not interesting folders
+    system([[NSString stringWithFormat:@"rm -r %@/index.json",DownloadPath] UTF8String]);
     system([[NSString stringWithFormat:@"rm -r %@/new",DownloadPath] UTF8String]);
     system([[NSString stringWithFormat:@"rm -r %@/create",DownloadPath] UTF8String]);
     system([[NSString stringWithFormat:@"rm -r %@/plebs",DownloadPath] UTF8String]);
