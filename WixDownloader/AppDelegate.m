@@ -329,7 +329,6 @@ NSTask* HTTPServer;
             [self fileAnalyzer:line :fileRoot :1];
         //}
     }
-    
     //===================================
     
     //Replace important static entries
@@ -338,14 +337,25 @@ NSTask* HTTPServer;
     indexHTML = [indexHTML stringByReplacingOccurrencesOfString:@"\"baseDomain\":\"wix.com\"" withString:@"\"baseDomain\":\"/\""];
     //===================================
     
-    [indexHTML writeToFile:[NSString stringWithFormat:@"%@/index.html",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
-    
     if ([php state] == NSOnState)
     {
         NSString *indexPHP = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/index.php",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
         
         [indexPHP writeToFile:[NSString stringWithFormat:@"%@/index.php",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
+        
+        //Reverse-Engineered PHP Contact Form
+        //===================================
+        system([[NSString stringWithFormat:@"rm -r %@/common-services",DownloadPath] UTF8String]);
+        [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/php",DownloadPath] withIntermediateDirectories:YES attributes:nil error:&error];
+         NSString *phpContact = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/contact.php",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
+        phpContact = [phpContact stringByReplacingOccurrencesOfString:@"<user@email.com>" withString:[email stringValue]];
+        [phpContact writeToFile:[NSString stringWithFormat:@"%@/php/contact.php",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
+        
+        indexHTML = [indexHTML stringByReplacingOccurrencesOfString:@"\"emailServer\":\"http://assets.wix.com/common-services/notification/invoke\"" withString:[NSString stringWithFormat:@"\"emailServer\":\"%@/php/contact.php\"",[domain stringValue]]];
+        //===================================
     }
+    
+    [indexHTML writeToFile:[NSString stringWithFormat:@"%@/index.html",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
     
     //Cleanup empty folders
     system([[NSString stringWithFormat:@"find %@ -type d -empty -delete",DownloadPath] UTF8String]);
@@ -715,6 +725,10 @@ NSTask* HTTPServer;
     {
         tipController.tip = @"Your own domain with full path,\nexample: www.coolbeans.com/joe";
     }
+    else if([[button title] isEqualToString:@"email"])
+    {
+        tipController.tip = @"PHP Contact Form - email address";
+    }
     else if([[button title] isEqualToString:@"level"])
     {
         tipController.tip = @"How deep '.js' files will be analyzed.\n\nWARNING: greater than 1 will retreive entire wix skin template.";
@@ -745,10 +759,12 @@ NSTask* HTTPServer;
     {
         if ([php state] == NSOnState)
         {
-            tipController.tip = @"EXPERIMENTAL: Emulate dynamic image size with php";
+            tipController.tip = @"EXPERIMENTAL:\nEmulate dynamic image size with php and enable contact form";
+            [email setEnabled:YES];
         }
         else
         {
+            [email setEnabled:NO];
             show = FALSE;
         }
     }

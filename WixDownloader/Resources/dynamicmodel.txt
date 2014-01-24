@@ -4,3 +4,5 @@
 [wixapps]/javascript/wixapps/core/views/ViewBuilder.js
 [wixapps]/javascript/wixapps/integration/components/traits/LoadTimeMeasurementTrait.js
 [web]/javascript/wysiwyg/editor/components/traits/FixedComponentTrait.js
+http://static.parastorage.com/services/html-landing/hp/ny/js/js-v1-2.js
+http://static.parastorage.com/services/html-landing/hp/ny/html/studio-2014/css-v4/global.css
