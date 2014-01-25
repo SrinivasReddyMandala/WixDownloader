@@ -640,7 +640,7 @@ NSTask* HTTPServer;
                         {
                             url = webURL;
                         }
-                        else if ([url rangeOfString:@"skins" options:NSCaseInsensitiveSearch].location != NSNotFound)
+                        else if ([_url rangeOfString:@"skins" options:NSCaseInsensitiveSearch].location != NSNotFound)
                         {
                             url = skinURL;
                         }
@@ -838,6 +838,7 @@ NSTask* HTTPServer;
         {
             [domain setStringValue:[NSString stringWithFormat:@"%@:8000",[domain stringValue]]];
             [php setState:FALSE];
+            [email setEnabled:NO];
         }
         
         thread = [[NSThread alloc] initWithTarget:self selector:@selector(startThread) object:nil];
