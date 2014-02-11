@@ -118,7 +118,7 @@ NSTask* HTTPServer;
     NSString *indexAdHeader = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/adheader.html",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
     NSString *indexAdFooter = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/adfooter.html",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
     NSString *indexSEO = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/seo.html",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
-
+    
     //Prevent ":" in the directory name as port#
     DownloadPath = [DownloadPath stringByReplacingOccurrencesOfString:@":" withString:@"-"];
     [[NSFileManager defaultManager] createDirectoryAtPath:DownloadPath withIntermediateDirectories:NO attributes:nil error:&error];
@@ -171,214 +171,225 @@ NSTask* HTTPServer;
         }
     }
     
-    wixTags = [NSArray arrayWithObjects: @"[tdr]",@"[baseThemeDir]" @"[webThemeDir]", @"[themeDir]", @"[ulc]", @"SKIN_ICON_PATH+", nil];
-    wixTagsURL = [NSArray arrayWithObjects:[NSString stringWithFormat:@"%@/images/wysiwyg/core/themes/base/",skinURL], [NSString stringWithFormat:@"%@/images/wysiwyg/core/themes/base/",skinURL], @"/", @"/", @"/", @"/", nil];
-    
-    //http://static.parastorage.com/services/skins/2.648.1/images/wysiwyg/core/themes/base/shadowbottom.png
-    //TODO: Wireshark these out ...find the URLS
-    //[tdr],[baseThemeDir]      =   BASE_THEME_DIRECTORY
-    //[themeDir]                =   THEME_DIRECTORY
-    //[webThemeDir]             =   WEB_THEME_DIRECTORY
-    //==================================
-    
-    for(int i = 0; i < [jsonHTTP count]; i++)
+    if(!wixappsURL)
     {
-        if ([[jsonHTTP objectAtIndex:i] rangeOfString:@"http://"].location != NSNotFound && [[jsonHTTP objectAtIndex:i] rangeOfString:@"\n"].location == NSNotFound) //pick only url and avoid comments
+        NSAlert *alert = [[NSAlert alloc] init];
+        [alert addButtonWithTitle:@"OK"];
+        [alert setMessageText:@"Website you are trying to download is not a wix.com design"];
+        [alert setAlertStyle:NSWarningAlertStyle];
+        [alert runModal];
+    }
+    else
+    {
+        wixTags = [NSArray arrayWithObjects: @"[tdr]",@"[baseThemeDir]" @"[webThemeDir]", @"[themeDir]", @"[ulc]", @"SKIN_ICON_PATH+", nil];
+        wixTagsURL = [NSArray arrayWithObjects:[NSString stringWithFormat:@"%@/images/wysiwyg/core/themes/base/",skinURL], [NSString stringWithFormat:@"%@/images/wysiwyg/core/themes/base/",skinURL], @"/", @"/", @"/", @"/", nil];
+        
+        //http://static.parastorage.com/services/skins/2.648.1/images/wysiwyg/core/themes/base/shadowbottom.png
+        //TODO: Wireshark these out ...find the URLS
+        //[tdr],[baseThemeDir]      =   BASE_THEME_DIRECTORY
+        //[themeDir]                =   THEME_DIRECTORY
+        //[webThemeDir]             =   WEB_THEME_DIRECTORY
+        //==================================
+        
+        for(int i = 0; i < [jsonHTTP count]; i++)
         {
-            if([[NSThread currentThread] isCancelled])
-                [NSThread exit];
-            
-            //===================================
-            NSString* fileDownload = [jsonHTTP objectAtIndex:i];
-            NSArray* domainRoot = [[fileDownload stringByReplacingOccurrencesOfString:@"http://" withString:@""] componentsSeparatedByString: @"/"];
-            
-            NSString* dirRoot = [self pathFromURL:fileDownload];
-            
-            [self fileAnalyzer:[NSString stringWithFormat:@"http://%@/%@index.json",[domainRoot objectAtIndex:0],dirRoot] :@"index.json" :1];
-            
-            [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/%@",DownloadPath,dirRoot] withIntermediateDirectories:YES attributes:nil error:&error];
-            
-            NSString* fileRoot = [domainRoot objectAtIndex:[domainRoot count]-1];
-            //Get rid of ? in the filename. This is ussually means the the file at the server is dynamic. like a PHP script but we don't care, we need static
-            if ([fileRoot rangeOfString:@"?"].location != NSNotFound)
+            if ([[jsonHTTP objectAtIndex:i] rangeOfString:@"http://"].location != NSNotFound && [[jsonHTTP objectAtIndex:i] rangeOfString:@"\n"].location == NSNotFound) //pick only url and avoid comments
             {
-                NSArray* staticFile = [fileRoot componentsSeparatedByString: @"?"];
-                fileRoot = [staticFile objectAtIndex:0];
-            }
-            //===================================
-            
-            if([binExtentions containsObject:[fileRoot pathExtension]]) //binary files, no analisys needed
-            {
-                NSData* webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:[jsonHTTP objectAtIndex:i]]];
+                if([[NSThread currentThread] isCancelled])
+                    [NSThread exit];
                 
-                //[self Debug:[NSString stringWithFormat:@"Downloading Binary: %@", fileRoot]];
+                //===================================
+                NSString* fileDownload = [jsonHTTP objectAtIndex:i];
+                NSArray* domainRoot = [[fileDownload stringByReplacingOccurrencesOfString:@"http://" withString:@""] componentsSeparatedByString: @"/"];
                 
-                if ([webBinary writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,dirRoot,fileRoot] atomically:YES])
+                NSString* dirRoot = [self pathFromURL:fileDownload];
+                
+                [self fileAnalyzer:[NSString stringWithFormat:@"http://%@/%@index.json",[domainRoot objectAtIndex:0],dirRoot] :@"index.json" :1];
+                
+                [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/%@",DownloadPath,dirRoot] withIntermediateDirectories:YES attributes:nil error:&error];
+                
+                NSString* fileRoot = [domainRoot objectAtIndex:[domainRoot count]-1];
+                //Get rid of ? in the filename. This is ussually means the the file at the server is dynamic. like a PHP script but we don't care, we need static
+                if ([fileRoot rangeOfString:@"?"].location != NSNotFound)
                 {
-                    //[self Debug:[NSString stringWithFormat:@"Saved %@", fileRoot]];
+                    NSArray* staticFile = [fileRoot componentsSeparatedByString: @"?"];
+                    fileRoot = [staticFile objectAtIndex:0];
                 }
-            }
-            else
-            {
-                [self fileAnalyzer:fileDownload :fileRoot :1];
-            }
-            
-            BOOL replace = YES;
-            
-            if ([[jsonHTTP objectAtIndex:i-2] isEqualToString:@"emailServer"])
-            {
-                replace = NO;
-            }
-            
-            if ([php state] == NSOnState)  //TODO: create emulating email php?
-            {
-                NSString* invokePHP = @"<?php\
-                ?>";
-                [invokePHP writeToFile:[NSString stringWithFormat:@"%@/common-services/notification/invoke",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:nil];
-            }
-            
-            if ([media state] != NSOnState)
-            {
-                if ([[jsonHTTP objectAtIndex:i-2] isEqualToString:@"mediaRootUrl"] ||
-                    [[jsonHTTP objectAtIndex:i-2] isEqualToString:@"staticMediaUrl"] ||
-                    [[jsonHTTP objectAtIndex:i-2] isEqualToString:@"staticAudioUrl"])
+                //===================================
+                
+                if([binExtentions containsObject:[fileRoot pathExtension]]) //binary files, no analisys needed
                 {
-                    //NSLog(@">> %@",[jsonHTTP objectAtIndex:i-2]);
+                    NSData* webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:[jsonHTTP objectAtIndex:i]]];
+                    
+                    //[self Debug:[NSString stringWithFormat:@"Downloading Binary: %@", fileRoot]];
+                    
+                    if ([webBinary writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,dirRoot,fileRoot] atomically:YES])
+                    {
+                        //[self Debug:[NSString stringWithFormat:@"Saved %@", fileRoot]];
+                    }
+                }
+                else
+                {
+                    [self fileAnalyzer:fileDownload :fileRoot :1];
+                }
+                
+                BOOL replace = YES;
+                
+                if ([[jsonHTTP objectAtIndex:i-2] isEqualToString:@"emailServer"])
+                {
                     replace = NO;
                 }
-            }
-            
-            if(replace == YES)
-            {
-                if(![binExtentions containsObject:[fileRoot pathExtension]] && ![txtExtentions containsObject:[fileRoot pathExtension]])
+                
+                if ([php state] == NSOnState)  //TODO: create emulating email php?
                 {
-                    fileRoot = @"";
+                    NSString* invokePHP = @"<?php\
+                    ?>";
+                    [invokePHP writeToFile:[NSString stringWithFormat:@"%@/common-services/notification/invoke",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:nil];
                 }
                 
-                //[self Debug:[NSString stringWithFormat:@"Replace %@ > %@", fileDownload,[self http_correctURL:[NSString stringWithFormat:@"%@/%@/%@",[domain stringValue],dirRoot,fileRoot]]]];
+                if ([media state] != NSOnState)
+                {
+                    if ([[jsonHTTP objectAtIndex:i-2] isEqualToString:@"mediaRootUrl"] ||
+                        [[jsonHTTP objectAtIndex:i-2] isEqualToString:@"staticMediaUrl"] ||
+                        [[jsonHTTP objectAtIndex:i-2] isEqualToString:@"staticAudioUrl"])
+                    {
+                        //NSLog(@">> %@",[jsonHTTP objectAtIndex:i-2]);
+                        replace = NO;
+                    }
+                }
                 
-                indexHTML = [indexHTML stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"\"%@\"",fileDownload] withString:[self http_correctURL:[NSString stringWithFormat:@"\"%@/%@/%@\"",[domain stringValue],dirRoot,fileRoot]]];
-                
-                //indexHTML = [indexHTML stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"\"%@\"",fileDownload] withString:[self http_correctURL:[NSString stringWithFormat:@"\"%@/%@/%@\"",[domain stringValue],dirRoot,[domainRoot objectAtIndex:[domainRoot count]-1]]]];
+                if(replace == YES)
+                {
+                    if(![binExtentions containsObject:[fileRoot pathExtension]] && ![txtExtentions containsObject:[fileRoot pathExtension]])
+                    {
+                        fileRoot = @"";
+                    }
+                    
+                    //[self Debug:[NSString stringWithFormat:@"Replace %@ > %@", fileDownload,[self http_correctURL:[NSString stringWithFormat:@"%@/%@/%@",[domain stringValue],dirRoot,fileRoot]]]];
+                    
+                    indexHTML = [indexHTML stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"\"%@\"",fileDownload] withString:[self http_correctURL:[NSString stringWithFormat:@"\"%@/%@/%@\"",[domain stringValue],dirRoot,fileRoot]]];
+                    
+                    //indexHTML = [indexHTML stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"\"%@\"",fileDownload] withString:[self http_correctURL:[NSString stringWithFormat:@"\"%@/%@/%@\"",[domain stringValue],dirRoot,[domainRoot objectAtIndex:[domainRoot count]-1]]]];
+                }
             }
-        }
-        else if ([[jsonHTTP objectAtIndex:i] isEqualToString:@"pageId"] && [seo state] == NSOnState) //Crawl for Ajax SEO pages
-        {
-            NSString* fileRoot = [NSString stringWithFormat:@"%@/%@",[jsonHTTP objectAtIndex:i+6],[jsonHTTP objectAtIndex:i+2]];
-            fileRoot = [fileRoot stringByReplacingOccurrencesOfString:@" " withString:@"-"];
-            
-            [self Debug:[NSString stringWithFormat:@"SEO: %@/?_escaped_fragment_=%@", [site stringValue], fileRoot]];
-            
-            [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/seo/%@",DownloadPath,[fileRoot stringByDeletingLastPathComponent]] withIntermediateDirectories:YES attributes:nil error:nil];
-            
-            NSString* htmlFile = [[self downloadFile:[NSString stringWithFormat:@"%@/?_escaped_fragment_=%@",[site stringValue],fileRoot]] stringByReplacingOccurrencesOfString:indexSEO withString:@""];
-            
-            if ([php state] == NSOnState)
+            else if ([[jsonHTTP objectAtIndex:i] isEqualToString:@"pageId"] && [seo state] == NSOnState) //Crawl for Ajax SEO pages
             {
+                NSString* fileRoot = [NSString stringWithFormat:@"%@/%@",[jsonHTTP objectAtIndex:i+6],[jsonHTTP objectAtIndex:i+2]];
+                fileRoot = [fileRoot stringByReplacingOccurrencesOfString:@" " withString:@"-"];
+                
+                [self Debug:[NSString stringWithFormat:@"SEO: %@/?_escaped_fragment_=%@", [site stringValue], fileRoot]];
+                
                 [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/seo/%@",DownloadPath,[fileRoot stringByDeletingLastPathComponent]] withIntermediateDirectories:YES attributes:nil error:nil];
-                [htmlFile writeToFile:[NSString stringWithFormat:@"%@/seo/%@.html",DownloadPath,fileRoot] atomically:YES encoding:NSUTF8StringEncoding error:&error];
+                
+                NSString* htmlFile = [[self downloadFile:[NSString stringWithFormat:@"%@/?_escaped_fragment_=%@",[site stringValue],fileRoot]] stringByReplacingOccurrencesOfString:indexSEO withString:@""];
+                
+                if ([php state] == NSOnState)
+                {
+                    [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/seo/%@",DownloadPath,[fileRoot stringByDeletingLastPathComponent]] withIntermediateDirectories:YES attributes:nil error:nil];
+                    [htmlFile writeToFile:[NSString stringWithFormat:@"%@/seo/%@.html",DownloadPath,fileRoot] atomically:YES encoding:NSUTF8StringEncoding error:&error];
+                }
+                else
+                {
+                    [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/%@",DownloadPath,[fileRoot stringByDeletingLastPathComponent]] withIntermediateDirectories:YES attributes:nil error:nil];
+                    [htmlFile writeToFile:[NSString stringWithFormat:@"%@/?_escaped_fragment_=%@",DownloadPath,fileRoot] atomically:YES encoding:NSUTF8StringEncoding error:&error];
+                }
             }
-            else
+            
+            float totalcount = [jsonHTTP count];
+            float currentcount = i;
+            [percent setStringValue:[NSString stringWithFormat:@"%.1f %%", currentcount / totalcount * 100]];
+            [progress setDoubleValue:i];
+        }
+        
+        //===================================
+        //Pickup missing files (Not the best solution but it should do) Thanks to: Zocker-3001
+        
+        NSString* missingFiles = [NSString stringWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/dynamicmodel.txt",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:NULL];
+        for (NSString *line in [missingFiles componentsSeparatedByString:@"\n"]) //read file line-by-line
+        {
+            if ([line rangeOfString:@"[url]"].location != NSNotFound)
             {
-                [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/%@",DownloadPath,[fileRoot stringByDeletingLastPathComponent]] withIntermediateDirectories:YES attributes:nil error:nil];
-                [htmlFile writeToFile:[NSString stringWithFormat:@"%@/?_escaped_fragment_=%@",DownloadPath,fileRoot] atomically:YES encoding:NSUTF8StringEncoding error:&error];
+                line = [line stringByReplacingOccurrencesOfString:@"[url]" withString:[site stringValue]];
             }
-        }
-        
-        float totalcount = [jsonHTTP count];
-        float currentcount = i;
-        [percent setStringValue:[NSString stringWithFormat:@"%.1f %%", currentcount / totalcount * 100]];
-        [progress setDoubleValue:i];
-    }
-    
-    //===================================
-    //Pickup missing files (Not the best solution but it should do) Thanks to: Zocker-3001
-    
-    NSString* missingFiles = [NSString stringWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/dynamicmodel.txt",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:NULL];
-    for (NSString *line in [missingFiles componentsSeparatedByString:@"\n"]) //read file line-by-line
-    {
-        if ([line rangeOfString:@"[url]"].location != NSNotFound)
-        {
-            line = [line stringByReplacingOccurrencesOfString:@"[url]" withString:[site stringValue]];
-        }
-        else if ([line rangeOfString:@"[skins]"].location != NSNotFound)
-        {
-            line = [line stringByReplacingOccurrencesOfString:@"[skins]" withString:skinURL];
-        }
-        else if ([line rangeOfString:@"[web]"].location != NSNotFound)
-        {
-            line = [line stringByReplacingOccurrencesOfString:@"[web]" withString:webURL];
-        }
-        else if ([line rangeOfString:@"[core]"].location != NSNotFound)
-        {
-            line = [line stringByReplacingOccurrencesOfString:@"[core]" withString:coreURL];
-        }
-        else if ([line rangeOfString:@"[wixapps]"].location != NSNotFound)
-        {
-            line = [line stringByReplacingOccurrencesOfString:@"[wixapps]" withString:wixappsURL];
-        }
-        
-        NSArray* domainRoot = [[line stringByReplacingOccurrencesOfString:@"http://" withString:@""] componentsSeparatedByString: @"/"];
-        NSString* fileRoot = [domainRoot objectAtIndex:[domainRoot count]-1];
-        
-        //if ([line rangeOfString:[site stringValue]].location != NSNotFound) //if own site url
-        //{
-        //    NSData* webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:line]];
-        //    [webBinary writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:line],fileRoot] atomically:YES];
-        //}else{
+            else if ([line rangeOfString:@"[skins]"].location != NSNotFound)
+            {
+                line = [line stringByReplacingOccurrencesOfString:@"[skins]" withString:skinURL];
+            }
+            else if ([line rangeOfString:@"[web]"].location != NSNotFound)
+            {
+                line = [line stringByReplacingOccurrencesOfString:@"[web]" withString:webURL];
+            }
+            else if ([line rangeOfString:@"[core]"].location != NSNotFound)
+            {
+                line = [line stringByReplacingOccurrencesOfString:@"[core]" withString:coreURL];
+            }
+            else if ([line rangeOfString:@"[wixapps]"].location != NSNotFound)
+            {
+                line = [line stringByReplacingOccurrencesOfString:@"[wixapps]" withString:wixappsURL];
+            }
+            
+            NSArray* domainRoot = [[line stringByReplacingOccurrencesOfString:@"http://" withString:@""] componentsSeparatedByString: @"/"];
+            NSString* fileRoot = [domainRoot objectAtIndex:[domainRoot count]-1];
+            
+            //if ([line rangeOfString:[site stringValue]].location != NSNotFound) //if own site url
+            //{
+            //    NSData* webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:line]];
+            //    [webBinary writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:line],fileRoot] atomically:YES];
+            //}else{
             [self fileAnalyzer:line :fileRoot :1];
-        //}
-    }
-    //===================================
-    
-    //Replace important static entries
-    //===================================
-    indexHTML = [indexHTML stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"\"domain\":\"%@\"",[[site stringValue] stringByReplacingOccurrencesOfString:@"http://" withString:@""]] withString:[NSString stringWithFormat:@"\"domain\":\"%@\"",[[domain stringValue] stringByReplacingOccurrencesOfString:@"http://" withString:@""]]];
-    indexHTML = [indexHTML stringByReplacingOccurrencesOfString:@"\"baseDomain\":\"wix.com\"" withString:@"\"baseDomain\":\"/\""];
-    //===================================
-    
-    if ([php state] == NSOnState)
-    {
-        NSString *indexPHP = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/index.php",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
-        
-        [indexPHP writeToFile:[NSString stringWithFormat:@"%@/index.php",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
-        
-        //Reverse-Engineered PHP Contact Form
+            //}
+        }
         //===================================
-        system([[NSString stringWithFormat:@"rm -r %@/common-services",DownloadPath] UTF8String]);
-        [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/php",DownloadPath] withIntermediateDirectories:YES attributes:nil error:&error];
-         NSString *phpContact = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/contact.php",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
-        phpContact = [phpContact stringByReplacingOccurrencesOfString:@"<user@email.com>" withString:[email stringValue]];
-        [phpContact writeToFile:[NSString stringWithFormat:@"%@/php/contact.php",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
         
-        indexHTML = [indexHTML stringByReplacingOccurrencesOfString:@"\"emailServer\":\"http://assets.wix.com/common-services/notification/invoke\"" withString:[NSString stringWithFormat:@"\"emailServer\":\"%@/php/contact.php\"",[domain stringValue]]];
+        //Replace important static entries
         //===================================
+        indexHTML = [indexHTML stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"\"domain\":\"%@\"",[[site stringValue] stringByReplacingOccurrencesOfString:@"http://" withString:@""]] withString:[NSString stringWithFormat:@"\"domain\":\"%@\"",[[domain stringValue] stringByReplacingOccurrencesOfString:@"http://" withString:@""]]];
+        indexHTML = [indexHTML stringByReplacingOccurrencesOfString:@"\"baseDomain\":\"wix.com\"" withString:@"\"baseDomain\":\"/\""];
+        //===================================
+        
+        if ([php state] == NSOnState)
+        {
+            NSString *indexPHP = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/index.php",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
+            
+            [indexPHP writeToFile:[NSString stringWithFormat:@"%@/index.php",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
+            
+            //Reverse-Engineered PHP Contact Form
+            //===================================
+            system([[NSString stringWithFormat:@"rm -r %@/common-services",DownloadPath] UTF8String]);
+            [[NSFileManager defaultManager] createDirectoryAtPath:[NSString stringWithFormat:@"%@/php",DownloadPath] withIntermediateDirectories:YES attributes:nil error:&error];
+            NSString *phpContact = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/contact.php",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
+            phpContact = [phpContact stringByReplacingOccurrencesOfString:@"<user@email.com>" withString:[email stringValue]];
+            [phpContact writeToFile:[NSString stringWithFormat:@"%@/php/contact.php",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
+            
+            indexHTML = [indexHTML stringByReplacingOccurrencesOfString:@"\"emailServer\":\"http://assets.wix.com/common-services/notification/invoke\"" withString:[NSString stringWithFormat:@"\"emailServer\":\"%@/php/contact.php\"",[domain stringValue]]];
+            //===================================
+        }
+        
+        [indexHTML writeToFile:[NSString stringWithFormat:@"%@/index.html",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
+        
+        //Cleanup empty folders
+        system([[NSString stringWithFormat:@"find %@ -type d -empty -delete",DownloadPath] UTF8String]);
+        
+        //Remove other not interesting folders
+        system([[NSString stringWithFormat:@"rm -r %@/index.json",DownloadPath] UTF8String]);
+        system([[NSString stringWithFormat:@"rm -r %@/www.wix.com",DownloadPath] UTF8String]);
+        system([[NSString stringWithFormat:@"rm -r %@/new",DownloadPath] UTF8String]);
+        system([[NSString stringWithFormat:@"rm -r %@/create",DownloadPath] UTF8String]);
+        system([[NSString stringWithFormat:@"rm -r %@/plebs",DownloadPath] UTF8String]);
+        system([[NSString stringWithFormat:@"rm -r %@/portal",DownloadPath] UTF8String]);
+        system([[NSString stringWithFormat:@"rm -r %@/integrations",DownloadPath] UTF8String]);
+        //system([[NSString stringWithFormat:@"rm -r %@/wix-html-editor-pages-webapp",DownloadPath] UTF8String]);
+        //system([[NSString stringWithFormat:@"rm -r %@/wix-public-html-renderer",DownloadPath] UTF8String]);
+        
+        [[NSWorkspace sharedWorkspace] activateFileViewerSelectingURLs:@[[NSURL fileURLWithPath:DownloadPath]]];
     }
-    
-    [indexHTML writeToFile:[NSString stringWithFormat:@"%@/index.html",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
-    
-    //Cleanup empty folders
-    system([[NSString stringWithFormat:@"find %@ -type d -empty -delete",DownloadPath] UTF8String]);
-    
-    //Remove other not interesting folders
-    system([[NSString stringWithFormat:@"rm -r %@/index.json",DownloadPath] UTF8String]);
-    system([[NSString stringWithFormat:@"rm -r %@/www.wix.com",DownloadPath] UTF8String]);
-    system([[NSString stringWithFormat:@"rm -r %@/new",DownloadPath] UTF8String]);
-    system([[NSString stringWithFormat:@"rm -r %@/create",DownloadPath] UTF8String]);
-    system([[NSString stringWithFormat:@"rm -r %@/plebs",DownloadPath] UTF8String]);
-    system([[NSString stringWithFormat:@"rm -r %@/portal",DownloadPath] UTF8String]);
-    system([[NSString stringWithFormat:@"rm -r %@/integrations",DownloadPath] UTF8String]);
-    //system([[NSString stringWithFormat:@"rm -r %@/wix-html-editor-pages-webapp",DownloadPath] UTF8String]);
-    //system([[NSString stringWithFormat:@"rm -r %@/wix-public-html-renderer",DownloadPath] UTF8String]);
     
     [self Debug:@"Downloading Finished"];
     [download setTitle:@"Download"];
     [loading stopAnimation: self];
     [loading setHidden:TRUE];
     [progress stopAnimation: self];
-    
-    [[NSWorkspace sharedWorkspace] activateFileViewerSelectingURLs:@[[NSURL fileURLWithPath:DownloadPath]]];
-    
+
     // TODO: Looks like some "skin" graphics files are hidden deep inside java
     // do a server sweep and look for 404 requests on live Safari view.
     
@@ -558,7 +569,9 @@ NSTask* HTTPServer;
                     {
                         [self Debug:[NSString stringWithFormat:@"\tHidden Media: %@ [%d]", [self pathTagCleanup:_url], _level]];
                         
+                        file = [self pathTagCleanup:_url];
                         BOOL DLmedia = TRUE; //download skin images but not galleries.
+                        
                         for(int t = 0; t < [wixTags count]; t++)  //Replace [] with url
                         {
                             if ([_url rangeOfString:[wixTags objectAtIndex:t]].location != NSNotFound)
@@ -573,7 +586,6 @@ NSTask* HTTPServer;
                         if ([_url rangeOfString:@"/"].location == NSNotFound)
                         {
                             _url = [NSString stringWithFormat:@"%@/%@",mediaURL,_url];
-                            file = _url;
                         }
                         
                         if ([media state] != NSOnState && _level == 1)
@@ -583,13 +595,15 @@ NSTask* HTTPServer;
                         
                         if(DLmedia && ![Bandwidth containsObject:_url])
                         {
+                            //[self Debug:[NSString stringWithFormat:@"\tDownload Media: %@%@ [%d]", [self pathFromURL:_url],file, _level]];
+                            
                             [Bandwidth addObject:_url];
                             
                             NSData* webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:_url]];
                             
                             [[NSFileManager defaultManager] createDirectoryAtPath:[[NSString stringWithFormat:@"%@/%@",DownloadPath,[self pathFromURL:_url]] stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
                             
-                            if ([webBinary writeToFile:[NSString stringWithFormat:@"%@/%@/%@",DownloadPath,[self pathFromURL:file],_url] atomically:YES])
+                            if ([webBinary writeToFile:[NSString stringWithFormat:@"%@/%@%@",DownloadPath,[self pathFromURL:_url],file] atomically:YES])
                             {
                                 //TODO: wix has a dynamic image by size, make php to emulate the same
                                 if ([php state] == NSOnState)
@@ -686,6 +700,7 @@ NSTask* HTTPServer;
     path = [path stringByReplacingOccurrencesOfString:@"," withString:@""];
     path = [path stringByReplacingOccurrencesOfString:@"\"" withString:@""];
     path = [path stringByReplacingOccurrencesOfString:@"'" withString:@""];
+    path = [path stringByReplacingOccurrencesOfString:@"http//" withString:@"http://"];
     return path;
 }
 
