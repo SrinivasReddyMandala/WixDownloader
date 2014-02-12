@@ -8,6 +8,7 @@ NSMutableSet* Bandwidth;
 NSArray* http;
 NSArray* allowedDomains;
 NSArray* binExtentions;
+NSArray* imageExtentions;
 NSArray* txtExtentions;
 NSArray* jsExtentions;
 NSArray* wixExtentions;
@@ -108,9 +109,10 @@ NSTask* HTTPServer;
     //==================================
     
     http = [NSArray arrayWithObjects: @"http://", @"https://", nil];
-    binExtentions = [NSArray arrayWithObjects: @"ico", @"png", @"jpg", @"jpeg", @"gif", @"mp3", @"wix_mp", @"swf", @"html", @"htm", nil]; //wix_mp = png
+    binExtentions = [NSArray arrayWithObjects: @"ico", @"mp3", @"swf", @"html", @"htm", nil];
     txtExtentions = [NSArray arrayWithObjects: @"js", @"json", @"z", @"css", nil];
     jsExtentions = [NSArray arrayWithObjects: @"url", @"uri",  @"background-image:url", @"background:url", @"iconUrl", nil];
+    imageExtentions = [NSArray arrayWithObjects: @"png", @"jpg", @"jpeg", @"gif", @"wix_mp" , nil]; //wix_mp = png
     
     DownloadPath = [NSString stringWithFormat:@"%@/Downloads/%@",NSHomeDirectory(),[[domain stringValue] stringByReplacingOccurrencesOfString:@"http://" withString:@""]];
     
@@ -217,7 +219,7 @@ NSTask* HTTPServer;
                 }
                 //===================================
                 
-                if([binExtentions containsObject:[fileRoot pathExtension]]) //binary files, no analisys needed
+                if([binExtentions containsObject:[fileRoot pathExtension]] || [imageExtentions containsObject:[fileRoot pathExtension]]) //binary files, no analisys needed
                 {
                     NSData* webBinary = [NSData dataWithContentsOfURL:[NSURL URLWithString:[jsonHTTP objectAtIndex:i]]];
                     
@@ -260,7 +262,7 @@ NSTask* HTTPServer;
                 
                 if(replace == YES)
                 {
-                    if(![binExtentions containsObject:[fileRoot pathExtension]] && ![txtExtentions containsObject:[fileRoot pathExtension]])
+                    if(![binExtentions containsObject:[fileRoot pathExtension]] && ![imageExtentions containsObject:[fileRoot pathExtension]] && ![txtExtentions containsObject:[fileRoot pathExtension]])
                     {
                         fileRoot = @"";
                     }
@@ -565,7 +567,7 @@ NSTask* HTTPServer;
                 
                 if(hidden)
                 {
-                    if([binExtentions containsObject:[[self pathTagCleanup:_url] pathExtension]]) //binary files, no analisys needed
+                    if([binExtentions containsObject:[[self pathTagCleanup:_url] pathExtension]] || [imageExtentions containsObject:[[self pathTagCleanup:_url] pathExtension]]) //image files, no analisys needed
                     {
                         [self Debug:[NSString stringWithFormat:@"\tHidden Media: %@ [%d]", [self pathTagCleanup:_url], _level]];
                         
@@ -603,14 +605,21 @@ NSTask* HTTPServer;
                             
                             [[NSFileManager defaultManager] createDirectoryAtPath:[[NSString stringWithFormat:@"%@/%@",DownloadPath,[self pathFromURL:_url]] stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
                             
-                            if ([webBinary writeToFile:[NSString stringWithFormat:@"%@/%@%@",DownloadPath,[self pathFromURL:_url],file] atomically:YES])
+                            //wix has a dynamic image by size, using php to emulate the same
+                            if ([php state] == NSOnState && [imageExtentions containsObject:[file pathExtension]])
                             {
-                                //TODO: wix has a dynamic image by size, make php to emulate the same
-                                if ([php state] == NSOnState)
-                                {
-                                    
-                                }
+                                [[NSFileManager defaultManager] copyItemAtURL:[NSString stringWithFormat:@"%@/Contents/Resources/DynamicImageResizer.php",[[NSBundle mainBundle] bundlePath]] toURL:[NSString stringWithFormat:@"%@/%@DynamicImageResizer.php",DownloadPath,[self pathFromURL:_url]] error:nil];
+                                
+                                NSString *imagePHP = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/image.php",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:nil];
+                                
+                                imagePHP = [imagePHP stringByReplacingOccurrencesOfString:@"[imagefile]" withString:[NSString stringWithFormat:@"_%@",[file stringByDeletingPathExtension]]];
+                                imagePHP = [imagePHP stringByReplacingOccurrencesOfString:@"[imagetype]" withString:[NSString stringWithFormat:@"%@",[file pathExtension]]];
+                                [imagePHP writeToFile:[NSString stringWithFormat:@"%@/%@%@",DownloadPath,[self pathFromURL:_url],file] atomically:YES encoding:NSUTF8StringEncoding error:nil];
+                                
+                                 file = [NSString stringWithFormat:@"_%@",file];
                             }
+                            
+                            [webBinary writeToFile:[NSString stringWithFormat:@"%@/%@%@",DownloadPath,[self pathFromURL:_url],file] atomically:YES];
                         }
                     }
                     else if([txtExtentions containsObject:[_url pathExtension]])
@@ -710,7 +719,7 @@ NSTask* HTTPServer;
     NSArray* domainRoot = [url componentsSeparatedByString: @"/"]; //[url pathComponents];
     long end = [domainRoot count];
     
-    if([binExtentions containsObject:[url pathExtension]] || [txtExtentions containsObject:[url pathExtension]] || [url rangeOfString:@"?"].location != NSNotFound)
+    if([binExtentions containsObject:[url pathExtension]] || [imageExtentions containsObject:[url pathExtension]] || [txtExtentions containsObject:[url pathExtension]] || [url rangeOfString:@"?"].location != NSNotFound)
     {
         end = [domainRoot count] - 1;
     }

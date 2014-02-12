@@ -16,6 +16,7 @@
 		6676BDCE18335444004A463B /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 6676BDCD18335444004A463B /* AppDelegate.m */; };
 		6676BDF218336BD8004A463B /* pwned.png in Resources */ = {isa = PBXBuildFile; fileRef = 6676BDF118336BD8004A463B /* pwned.png */; };
 		6676BDF918336EA0004A463B /* wix.icns in Resources */ = {isa = PBXBuildFile; fileRef = 6676BDF818336EA0004A463B /* wix.icns */; };
+		667F563518AB157C003BB93E /* DynamicImageResizer.php in Resources */ = {isa = PBXBuildFile; fileRef = 667F563418AB157C003BB93E /* DynamicImageResizer.php */; };
 		66952EBD188EF4450048CC6F /* dynamicmodel.txt in Resources */ = {isa = PBXBuildFile; fileRef = 66952EBC188EF4450048CC6F /* dynamicmodel.txt */; };
 		66A7379B189077160053EB6F /* html5shiv.html in Resources */ = {isa = PBXBuildFile; fileRef = 66A73799189077160053EB6F /* html5shiv.html */; };
 		66CE4E48184A8A0C00123FF8 /* index.php in Resources */ = {isa = PBXBuildFile; fileRef = 66CE4E47184A8A0C00123FF8 /* index.php */; };
@@ -41,6 +42,7 @@
 		6676BDCD18335444004A463B /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		6676BDF118336BD8004A463B /* pwned.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = pwned.png; path = Resources/pwned.png; sourceTree = "<group>"; };
 		6676BDF818336EA0004A463B /* wix.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = wix.icns; path = ../wix.icns; sourceTree = "<group>"; };
+		667F563418AB157C003BB93E /* DynamicImageResizer.php */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.php; name = DynamicImageResizer.php; path = Resources/DynamicImageResizer.php; sourceTree = "<group>"; };
 		66952EBC188EF4450048CC6F /* dynamicmodel.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = dynamicmodel.txt; path = Resources/dynamicmodel.txt; sourceTree = "<group>"; };
 		66A73799189077160053EB6F /* html5shiv.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = html5shiv.html; path = Resources/html5shiv.html; sourceTree = "<group>"; };
 		66CE4E47184A8A0C00123FF8 /* index.php */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.php; name = index.php; path = Resources/index.php; sourceTree = "<group>"; };
@@ -117,6 +119,7 @@
 				66160F3F184C2F5D00C4FDFC /* seo.html */,
 				66CE4E47184A8A0C00123FF8 /* index.php */,
 				665155F21892EA6C0020BA24 /* contact.php */,
+				667F563418AB157C003BB93E /* DynamicImageResizer.php */,
 				66E74D02184C1E9200F38D05 /* image.php */,
 				66FC650218452E3E00F664CC /* pwned@2x.png */,
 				66FC650618452F8500F664CC /* tip@2x.png */,
@@ -197,6 +200,7 @@
 				66280D14188F523500B9B2DF /* adheader.html in Resources */,
 				6676BDF218336BD8004A463B /* pwned.png in Resources */,
 				66FC650518452EAE00F664CC /* tip.png in Resources */,
+				667F563518AB157C003BB93E /* DynamicImageResizer.php in Resources */,
 				665155F31892EA6C0020BA24 /* contact.php in Resources */,
 				66A7379B189077160053EB6F /* html5shiv.html in Resources */,
 				66FC650C184531DD00F664CC /* ToolTip.xib in Resources */,
