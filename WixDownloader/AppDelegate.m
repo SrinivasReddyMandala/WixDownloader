@@ -369,6 +369,20 @@ NSTask* HTTPServer;
         
         [indexHTML writeToFile:[NSString stringWithFormat:@"%@/index.html",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
         
+        if ([media state] == NSOnState)
+        {
+            NSString *htaccess = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/htaccess",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:&error];
+            if ([php state] == NSOnState)
+            {
+                [[NSFileManager defaultManager] copyItemAtURL:[NSString stringWithFormat:@"%@/Contents/Resources/DynamicImageResizer.php",[[NSBundle mainBundle] bundlePath]] toURL:[NSString stringWithFormat:@"%@/media/DynamicImageResizer.php",DownloadPath] error:nil];
+            }
+            else
+            {
+                htaccess = [htaccess stringByReplacingOccurrencesOfString:@"AddType application/x-httpd-php .png .jpg .wix_mp" withString:@""];
+            }
+            [htaccess writeToFile:[NSString stringWithFormat:@"%@/media/.htaccess",DownloadPath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
+        }
+        
         //Cleanup empty folders
         system([[NSString stringWithFormat:@"find %@ -type d -empty -delete",DownloadPath] UTF8String]);
         
@@ -391,7 +405,7 @@ NSTask* HTTPServer;
     [loading stopAnimation: self];
     [loading setHidden:TRUE];
     [progress stopAnimation: self];
-
+    
     // TODO: Looks like some "skin" graphics files are hidden deep inside java
     // do a server sweep and look for 404 requests on live Safari view.
     
@@ -608,15 +622,13 @@ NSTask* HTTPServer;
                             //wix has a dynamic image by size, using php to emulate the same
                             if ([php state] == NSOnState && [imageExtentions containsObject:[file pathExtension]])
                             {
-                                [[NSFileManager defaultManager] copyItemAtURL:[NSString stringWithFormat:@"%@/Contents/Resources/DynamicImageResizer.php",[[NSBundle mainBundle] bundlePath]] toURL:[NSString stringWithFormat:@"%@/%@DynamicImageResizer.php",DownloadPath,[self pathFromURL:_url]] error:nil];
-                                
                                 NSString *imagePHP = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/image.php",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:nil];
                                 
                                 imagePHP = [imagePHP stringByReplacingOccurrencesOfString:@"[imagefile]" withString:[NSString stringWithFormat:@"_%@",[file stringByDeletingPathExtension]]];
                                 imagePHP = [imagePHP stringByReplacingOccurrencesOfString:@"[imagetype]" withString:[NSString stringWithFormat:@"%@",[file pathExtension]]];
                                 [imagePHP writeToFile:[NSString stringWithFormat:@"%@/%@%@",DownloadPath,[self pathFromURL:_url],file] atomically:YES encoding:NSUTF8StringEncoding error:nil];
                                 
-                                 file = [NSString stringWithFormat:@"_%@",file];
+                                file = [NSString stringWithFormat:@"_%@",file];
                             }
                             
                             [webBinary writeToFile:[NSString stringWithFormat:@"%@/%@%@",DownloadPath,[self pathFromURL:_url],file] atomically:YES];

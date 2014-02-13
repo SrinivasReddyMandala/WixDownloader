@@ -10,6 +10,7 @@
 		66160F40184C2F5D00C4FDFC /* seo.html in Resources */ = {isa = PBXBuildFile; fileRef = 66160F3F184C2F5D00C4FDFC /* seo.html */; };
 		66280D12188F522100B9B2DF /* adfooter.html in Resources */ = {isa = PBXBuildFile; fileRef = 66280D11188F522100B9B2DF /* adfooter.html */; };
 		66280D14188F523500B9B2DF /* adheader.html in Resources */ = {isa = PBXBuildFile; fileRef = 66280D13188F523500B9B2DF /* adheader.html */; };
+		6631446718AC95ED00083F65 /* htaccess in Resources */ = {isa = PBXBuildFile; fileRef = 6631446618AC95ED00083F65 /* htaccess */; };
 		665155F31892EA6C0020BA24 /* contact.php in Resources */ = {isa = PBXBuildFile; fileRef = 665155F21892EA6C0020BA24 /* contact.php */; };
 		6676BDBB18335444004A463B /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6676BDBA18335444004A463B /* Cocoa.framework */; };
 		6676BDC718335444004A463B /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 6676BDC618335444004A463B /* main.m */; };
@@ -33,6 +34,7 @@
 		66160F3F184C2F5D00C4FDFC /* seo.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = seo.html; path = Resources/seo.html; sourceTree = "<group>"; };
 		66280D11188F522100B9B2DF /* adfooter.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = adfooter.html; path = Resources/adfooter.html; sourceTree = "<group>"; };
 		66280D13188F523500B9B2DF /* adheader.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = adheader.html; path = Resources/adheader.html; sourceTree = "<group>"; };
+		6631446618AC95ED00083F65 /* htaccess */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = htaccess; path = Resources/htaccess; sourceTree = "<group>"; };
 		665155F21892EA6C0020BA24 /* contact.php */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.php; name = contact.php; path = Resources/contact.php; sourceTree = "<group>"; };
 		6676BDB718335444004A463B /* WixDownloader.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WixDownloader.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6676BDBA18335444004A463B /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
@@ -117,6 +119,7 @@
 				66280D13188F523500B9B2DF /* adheader.html */,
 				66280D11188F522100B9B2DF /* adfooter.html */,
 				66160F3F184C2F5D00C4FDFC /* seo.html */,
+				6631446618AC95ED00083F65 /* htaccess */,
 				66CE4E47184A8A0C00123FF8 /* index.php */,
 				665155F21892EA6C0020BA24 /* contact.php */,
 				667F563418AB157C003BB93E /* DynamicImageResizer.php */,
@@ -198,6 +201,7 @@
 				66952EBD188EF4450048CC6F /* dynamicmodel.txt in Resources */,
 				66280D12188F522100B9B2DF /* adfooter.html in Resources */,
 				66280D14188F523500B9B2DF /* adheader.html in Resources */,
+				6631446718AC95ED00083F65 /* htaccess in Resources */,
 				6676BDF218336BD8004A463B /* pwned.png in Resources */,
 				66FC650518452EAE00F664CC /* tip.png in Resources */,
 				667F563518AB157C003BB93E /* DynamicImageResizer.php in Resources */,
