@@ -623,9 +623,6 @@ NSTask* HTTPServer;
                             if ([php state] == NSOnState && [imageExtentions containsObject:[file pathExtension]])
                             {
                                 NSString *imagePHP = [[NSString alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Resources/image.php",[[NSBundle mainBundle] bundlePath]] encoding:NSUTF8StringEncoding error:nil];
-                                
-                                imagePHP = [imagePHP stringByReplacingOccurrencesOfString:@"[imagefile]" withString:[NSString stringWithFormat:@"_%@",[file stringByDeletingPathExtension]]];
-                                imagePHP = [imagePHP stringByReplacingOccurrencesOfString:@"[imagetype]" withString:[NSString stringWithFormat:@"%@",[file pathExtension]]];
                                 [imagePHP writeToFile:[NSString stringWithFormat:@"%@/%@%@",DownloadPath,[self pathFromURL:_url],file] atomically:YES encoding:NSUTF8StringEncoding error:nil];
                                 
                                 file = [NSString stringWithFormat:@"_%@",file];
@@ -860,6 +857,7 @@ NSTask* HTTPServer;
         //Keeps track of redundant downloads, optimizes bandwidth
         Bandwidth = [[NSMutableSet alloc] init];
         
+        
         if ([[site stringValue] rangeOfString:@"http://"].location == NSNotFound)
         {
             [site setStringValue:[NSString stringWithFormat:@"http://%@",[site stringValue]]];
@@ -868,6 +866,10 @@ NSTask* HTTPServer;
         if ([[domain stringValue] rangeOfString:@"http://"].location == NSNotFound)
         {
             [domain setStringValue:[NSString stringWithFormat:@"http://%@",[domain stringValue]]];
+        }
+        else if ([[domain stringValue] isEqualToString:@"http://"])
+        {
+            return;
         }
         
         if ([[domain stringValue] rangeOfString:@"127.0.0.1"].location != NSNotFound && [[[domain stringValue] stringByReplacingOccurrencesOfString:@"http://" withString:@""] rangeOfString:@":"].location == NSNotFound)
